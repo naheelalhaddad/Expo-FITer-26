@@ -339,8 +339,12 @@
     </div>
   `).join('');
 
-  function openProject(idx) {
+  ffunction openProject(idx) {
     stopCarousel();
+    
+    // FREEZE MOSE INTERACTION CALCULATION STREAM
+    track.style.pointerEvents = "none";
+    
     currentProject = projects[idx];
     isSubmitted = false;
 
@@ -387,9 +391,12 @@
   
   function closeExpanded() {
     document.getElementById('expanded-overlay').classList.remove('visible');
+    
+    // RESTORE COMPONENT SELECTION INTERACTIVITY
+    track.style.pointerEvents = "auto";
+    
     resumeCarousel();
   }
-
   function updateCriterion(name, val) {
     criteriaValues[name] = parseInt(val);
     const key = name.replace(/\s/g,'_');
