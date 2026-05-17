@@ -525,17 +525,23 @@
     wrap.classList.remove('grabbing');
   });
 
-  // FIXED DESKTOP CLICK ENGINE: Relies on explicit event delegation separate from pointer down translations
+// FIXED DESKTOP CLICK ENGINE: Resolves sub-element click translations
   wrap.addEventListener('click', e => {
     if (isDragging) {
       e.preventDefault();
       e.stopPropagation();
       return;
     }
-    const targetCard = e.target.closest('.proj-card');
+    
+    // Fallback chain: Checks both path traversal and closest target containers
+    const targetCard = e.target.closest('.proj-card') || 
+                       (e.composedPath && e.composedPath().find(el => el.classList && el.classList.contains('proj-card')));
+                       
     if (targetCard) {
       const idx = parseInt(targetCard.getAttribute('data-idx'));
-      openProject(idx);
+      if (!isNaN(idx)) {
+        openProject(idx);
+      }
     }
   });
 
