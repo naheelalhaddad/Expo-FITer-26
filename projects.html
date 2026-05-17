@@ -342,9 +342,6 @@
   function openProject(idx) {
     stopCarousel();
     
-    // FREEZE MOSE INTERACTION CALCULATION STREAM
-    track.style.pointerEvents = "none";
-    
     currentProject = projects[idx];
     isSubmitted = false;
 
@@ -391,12 +388,9 @@
   
   function closeExpanded() {
     document.getElementById('expanded-overlay').classList.remove('visible');
-    
-    // RESTORE COMPONENT SELECTION INTERACTIVITY
-    track.style.pointerEvents = "auto";
-    
     resumeCarousel();
   }
+
   function updateCriterion(name, val) {
     criteriaValues[name] = parseInt(val);
     const key = name.replace(/\s/g,'_');
@@ -471,7 +465,6 @@
 
   const wrap = document.getElementById('carousel-wrap');
 
-  // NEUTRALIZATION: Blocks desktop engine from auto-capturing selection arrays
   wrap.addEventListener('dragstart', e => e.preventDefault());
 
   wrap.addEventListener('pointerdown', e => {
@@ -532,7 +525,6 @@
     wrap.classList.remove('grabbing');
   });
 
-// FIXED DESKTOP CLICK ENGINE: Resolves sub-element click translations
   wrap.addEventListener('click', e => {
     if (isDragging) {
       e.preventDefault();
@@ -540,7 +532,6 @@
       return;
     }
     
-    // Fallback chain: Checks both path traversal and closest target containers
     const targetCard = e.target.closest('.proj-card') || 
                        (e.composedPath && e.composedPath().find(el => el.classList && el.classList.contains('proj-card')));
                        
@@ -557,7 +548,7 @@
     {text:'Applied Science University'},{text:'Graduation Exhibition 2026',hi:true},{text:'5 Categories'},{text:'3 Judges'},{text:'ASU Jordan'},
   ];
   document.getElementById('marquee-track').innerHTML = [...marqueeItems,...marqueeItems].map(i =>
-    `<span class="marquee-item ${i.hi?'hi':''}"><span class="marquee-sep"></span>${i.text}</span>`
+    `<span, class="marquee-item ${i.hi?'hi':''}"><span class="marquee-sep"></span>${i.text}</span>`
   ).join('');
 </script>
 </body>
