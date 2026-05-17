@@ -188,7 +188,6 @@
   </div>
 </div>
 
-<!-- EXPANDED VIEW -->
 <div class="expanded-overlay" id="expanded-overlay">
   <div class="expanded-inner">
     <button class="back-btn" onclick="closeExpanded()">
@@ -196,7 +195,6 @@
       Back to projects
     </button>
 
-    <!-- hero -->
     <div class="exp-hero" id="exp-hero">
       <div class="exp-hero-bg" id="exp-hero-bg"></div>
       <div class="exp-hero-overlay"></div>
@@ -207,7 +205,6 @@
       </div>
     </div>
 
-    <!-- info -->
     <div class="info-card">
       <div>
         <div class="info-section-title">Abstract</div>
@@ -231,7 +228,6 @@
       </div>
     </div>
 
-    <!-- rating -->
     <div class="rating-card" id="rating-card">
       <div class="rating-card-top"></div>
       <div class="rating-card-inner">
@@ -318,10 +314,11 @@
     return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label;
   }
 
+  // FIXED INTERACTION CARDS: Removed breaking inline onclick bindings
   const track = document.getElementById('carousel-track');
   const doubled = [...projects, ...projects];
   track.innerHTML = doubled.map((p, i) => `
-    <div class="proj-card" onclick="openProject(${i % projects.length})" data-idx="${i % projects.length}">
+    <div class="proj-card" data-idx="${i % projects.length}">
       <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)">
         <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.15" preserveAspectRatio="none" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
           <path d="M-50 150 Q200 50 450 200" stroke="white" stroke-width="60" fill="none" opacity=".3"/>
@@ -342,8 +339,7 @@
     </div>
   `).join('');
 
- function openProject(idx) {
-    if (isPointerActive) return;
+  function openProject(idx) {
     stopCarousel();
     currentProject = projects[idx];
     isSubmitted = false;
@@ -360,7 +356,6 @@
       `<div class="member-item"><div class="member-dot"></div>${m}</div>`
     ).join('');
 
-    // CRITERIA GENERATION FIX
     criteriaValues = {};
     criteria.forEach(c => criteriaValues[c.name] = 75);
     document.getElementById('criteria-list').innerHTML = criteria.map(c => {
@@ -469,6 +464,9 @@
 
   const wrap = document.getElementById('carousel-wrap');
 
+  // NEUTRALIZATION: Blocks desktop engine from auto-capturing selection arrays
+  wrap.addEventListener('dragstart', e => e.preventDefault());
+
   wrap.addEventListener('pointerdown', e => {
     isPointerActive = true;
     isDragging = false;
@@ -485,8 +483,7 @@
     const dx = lastX - e.clientX;
     const totalDelta = Math.abs(e.clientX - startX);
     
-    // DESKTOP JITTER FILTERING: Increase threshold to 15 pixels
-    if (totalDelta > 15) {
+    if (totalDelta > 10) {
       isDragging = true;
     }
     
@@ -507,7 +504,6 @@
     wrap.classList.remove('grabbing');
     wrap.releasePointerCapture(e.pointerId);
     
-    // CLICK DISAMBIGUATION LOGIC
     if (isDragging) {
       function momentum() {
         if (isPointerActive || Math.abs(velocity) < .1) { 
@@ -520,22 +516,27 @@
         requestAnimationFrame(momentum);
       }
       momentum();
-    } else {
-      // Force immediate project modal expansion on click
-      const targetCard = e.target.closest('.proj-card');
-      if (targetCard) {
-        const idx = parseInt(targetCard.getAttribute('data-idx'));
-        openProject(idx);
-      }
     }
-    isDragging = false;
   });
-
 
   wrap.addEventListener('pointercancel', e => {
     isPointerActive = false;
     isDragging = false;
     wrap.classList.remove('grabbing');
+  });
+
+  // FIXED DESKTOP CLICK ENGINE: Relies on explicit event delegation separate from pointer down translations
+  wrap.addEventListener('click', e => {
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    const targetCard = e.target.closest('.proj-card');
+    if (targetCard) {
+      const idx = parseInt(targetCard.getAttribute('data-idx'));
+      openProject(idx);
+    }
   });
 
   const marqueeItems = [
