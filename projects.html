@@ -485,7 +485,8 @@
     const dx = lastX - e.clientX;
     const totalDelta = Math.abs(e.clientX - startX);
     
-    if (totalDelta > 6) {
+    // DESKTOP JITTER FILTERING: Increase threshold to 15 pixels
+    if (totalDelta > 15) {
       isDragging = true;
     }
     
@@ -506,6 +507,7 @@
     wrap.classList.remove('grabbing');
     wrap.releasePointerCapture(e.pointerId);
     
+    // CLICK DISAMBIGUATION LOGIC
     if (isDragging) {
       function momentum() {
         if (isPointerActive || Math.abs(velocity) < .1) { 
@@ -519,13 +521,16 @@
       }
       momentum();
     } else {
+      // Force immediate project modal expansion on click
       const targetCard = e.target.closest('.proj-card');
       if (targetCard) {
         const idx = parseInt(targetCard.getAttribute('data-idx'));
         openProject(idx);
       }
     }
+    isDragging = false;
   });
+
 
   wrap.addEventListener('pointercancel', e => {
     isPointerActive = false;
