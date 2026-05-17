@@ -342,7 +342,7 @@
     </div>
   `).join('');
 
-  function openProject(idx) {
+ function openProject(idx) {
     if (isPointerActive) return;
     stopCarousel();
     currentProject = projects[idx];
@@ -360,19 +360,23 @@
       `<div class="member-item"><div class="member-dot"></div>${m}</div>`
     ).join('');
 
+    // CRITERIA GENERATION FIX
     criteriaValues = {};
     criteria.forEach(c => criteriaValues[c.name] = 75);
-    document.getElementById('criteria-list').innerHTML = criteria.map(c => `
-      <div class="criterion">
-        <div class="criterion-header">
-          <span class="criterion-name">${c.name}</span>
-          <span class="criterion-score-display" id="score-${c.name.replace(/\s/g,'_')}">75 / 100</span>
+    document.getElementById('criteria-list').innerHTML = criteria.map(c => {
+      const key = c.name.replace(/\s/g,'_');
+      return `
+        <div class="criterion">
+          <div class="criterion-header">
+            <span class="criterion-name">${c.name}</span>
+            <span class="criterion-score-display" id="score-${key}">75 / 100</span>
+          </div>
+          <div class="criterion-desc">${c.desc}</div>
+          <input type="range" min="0" max="100" value="75" oninput="updateCriterion('${c.name}', this.value)" />
+          <div class="range-label" id="label-${key}">${getRangeLabel(75)}</div>
         </div>
-        <div class="criterion-desc">${c.desc}</div>
-        <input type="range" min="0" max="100" value="75" oninput="updateCriterion('${c.name}', this.value)" />
-        <div class="range-label" id="label-${c.name.replace(/\s/g,'_')}">${getRangeLabel(75)}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     overallValue = 75;
     document.getElementById('overall-num').textContent = 75;
@@ -385,7 +389,7 @@
     overlay.classList.add('visible');
     overlay.scrollTop = 0;
   }
-
+  
   function closeExpanded() {
     document.getElementById('expanded-overlay').classList.remove('visible');
     resumeCarousel();
