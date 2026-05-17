@@ -287,10 +287,10 @@
     { num:'P-002', name:'E-Learning Portal',        category:'Web Systems',  supervisor:'Dr. Rima Haddad',    members:['Lina Farhat','Mohammad Radi','Tala Amin'],     abstract:'A comprehensive e-learning platform built for Applied Science University, enabling instructors to create courses, track student progress, and deliver interactive content through a modern web interface.', colors:['#4a1a2e','#2d0e1c'] },
     { num:'P-003', name:'Health Monitor App',       category:'Mobile',       supervisor:'Dr. Sami Nabulsi',   members:['Reem Saleh','Khalid Naser','Dana Bishawi'],   abstract:'A wearable-connected mobile application that tracks vital signs, sleep patterns, and activity levels, providing users with personalized health insights and early anomaly detection alerts.', colors:['#1a4a3a','#0d2e24'] },
     { num:'P-004', name:'Blockchain Tracker',       category:'Security',     supervisor:'Dr. Firas Lutfi',    members:['Omar Tawil','Hana Jabri','Faris Lafi'],       abstract:'A decentralized supply chain tracking system leveraging blockchain technology to ensure transparency, prevent fraud, and provide end-to-end traceability of goods from manufacturer to consumer.', colors:['#3a2a0e','#241a08'] },
-    { num:'P-005', name:'AR Campus Navigation',     category:'Mobile',       supervisor:'Dr. Lara Qasim',    members:['Sana Wahdan','Ziad Qureshi','Maya Chalabi'],  abstract:'An augmented reality mobile application that overlays directional guidance and points of interest onto live camera feeds, helping new students and visitors navigate the university campus intuitively.', colors:['#2a1a4a','#1a0d30'] },
-    { num:'P-006', name:'Automated Grading',        category:'AI Systems',   supervisor:'Dr. Rami Ghanem',   members:['Nour Pasha','Sami Ghattas','Leen Hamdan'],    abstract:'An AI-powered grading assistant that uses NLP to evaluate short-answer responses and essays, providing consistent, bias-free scoring and detailed feedback to students within seconds of submission.', colors:['#1a2a4a','#0d1a30'] },
-    { num:'P-007', name:'IoT Smart Home',           category:'IoT',          supervisor:'Dr. Basil Freij',   members:['Karim Daouk','Rania Masri','Basil Farah'],    abstract:'A unified IoT dashboard enabling homeowners to monitor and control smart devices — lighting, temperature, security cameras, and appliances — through a single mobile interface with voice command integration.', colors:['#3a1a1a','#240e0e'] },
-    { num:'P-008', name:'Mental Health Chatbot',    category:'AI Systems',   supervisor:'Dr. Dina Sabbagh',  members:['Dima Saad','Hamza Rami','Sura Taha'],         abstract:'A conversational AI companion designed to support university students experiencing stress, anxiety, or academic pressure, offering evidence-based coping strategies and connecting users with professional resources when needed.', colors:['#1a3a2a','#0d2418'] },
+    { num:'P-005', name:'AR Campus Navigation',     category:'Mobile',       supervisor:'Dr. Lara Qasim',     members:['Sana Wahdan','Ziad Qureshi','Maya Chalabi'],  abstract:'An augmented reality mobile application that overlays directional guidance and points of interest onto live camera feeds, helping new students and visitors navigate the university campus intuitively.', colors:['#2a1a4a','#1a0d30'] },
+    { num:'P-006', name:'Automated Grading',        category:'AI Systems',   supervisor:'Dr. Rami Ghanem',    members:['Nour Pasha','Sami Ghattas','Leen Hamdan'],    abstract:'An AI-powered grading assistant that uses NLP to evaluate short-answer responses and essays, providing consistent, bias-free scoring and detailed feedback to students within seconds of submission.', colors:['#1a2a4a','#0d1a30'] },
+    { num:'P-007', name:'IoT Smart Home',           category:'IoT',          supervisor:'Dr. Basil Freij',    members:['Karim Daouk','Rania Masri','Basil Farah'],    abstract:'A unified IoT dashboard enabling homeowners to monitor and control smart devices — lighting, temperature, security cameras, and appliances — through a single mobile interface with voice command integration.', colors:['#3a1a1a','#240e0e'] },
+    { num:'P-008', name:'Mental Health Chatbot',    category:'AI Systems',   supervisor:'Dr. Dina Sabbagh',   members:['Dima Saad','Hamza Rami','Sura Taha'],         abstract:'A conversational AI companion designed to support university students experiencing stress, anxiety, or academic pressure, offering evidence-based coping strategies and connecting users with professional resources when needed.', colors:['#1a3a2a','#0d2418'] },
   ];
 
   const rangeLabels = [
@@ -318,10 +318,9 @@
     return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label;
   }
 
-  // BUILD CAROUSEL
   const track = document.getElementById('carousel-track');
   const doubled = [...projects, ...projects];
-  track.innerHTML = doubled.map((p,i) => `
+  track.innerHTML = doubled.map((p, i) => `
     <div class="proj-card" onclick="openProject(${i % projects.length})" data-idx="${i % projects.length}">
       <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)">
         <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.15" preserveAspectRatio="none" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
@@ -343,9 +342,8 @@
     </div>
   `).join('');
 
-  // OPEN PROJECT
   function openProject(idx) {
-    if (isDragging) return;
+    if (isPointerActive) return;
     stopCarousel();
     currentProject = projects[idx];
     isSubmitted = false;
@@ -362,14 +360,13 @@
       `<div class="member-item"><div class="member-dot"></div>${m}</div>`
     ).join('');
 
-    // criteria
     criteriaValues = {};
     criteria.forEach(c => criteriaValues[c.name] = 75);
     document.getElementById('criteria-list').innerHTML = criteria.map(c => `
       <div class="criterion">
         <div class="criterion-header">
           <span class="criterion-name">${c.name}</span>
-          <span class="criterion-score-display" id="score-${c.name.replace(/\s/g,'_')}"">75 / 100</span>
+          <span class="criterion-score-display" id="score-${c.name.replace(/\s/g,'_')}">75 / 100</span>
         </div>
         <div class="criterion-desc">${c.desc}</div>
         <input type="range" min="0" max="100" value="75" oninput="updateCriterion('${c.name}', this.value)" />
@@ -429,26 +426,38 @@
     }
   }
 
-  // CAROUSEL LOGIC
   let offset = 0;
   let autoRunning = true;
   let isDragging = false;
+  let isPointerActive = false;
   let lastX = 0;
   let velocity = 0;
   let lastTime = 0;
+  let startX = 0;
+
+  function getHalfScrollWidth() {
+    return track.scrollWidth > 0 ? track.scrollWidth / 2 : (projects.length * 356);
+  }
 
   function applyOffset() {
-    const half = track.scrollWidth / 2;
+    const half = getHalfScrollWidth();
     if (offset >= half) offset -= half;
     if (offset < 0) offset += half;
     track.style.transform = `translateX(${-offset}px)`;
   }
 
   function autoScroll() {
-    if (!isDragging && autoRunning) offset += 0.55;
-    applyOffset();
+    if (!isPointerActive && autoRunning) {
+      offset += 0.55;
+      applyOffset();
+    }
     requestAnimationFrame(autoScroll);
   }
+  
+  window.addEventListener('load', () => {
+    applyOffset();
+  });
+  
   autoScroll();
 
   function stopCarousel() { autoRunning = false; }
@@ -457,48 +466,69 @@
   const wrap = document.getElementById('carousel-wrap');
 
   wrap.addEventListener('pointerdown', e => {
+    isPointerActive = true;
     isDragging = false;
-    lastX = e.clientX; lastTime = Date.now(); velocity = 0;
+    startX = e.clientX;
+    lastX = e.clientX;
+    lastTime = Date.now();
+    velocity = 0;
     wrap.classList.add('grabbing');
     wrap.setPointerCapture(e.pointerId);
-    wrap._startX = e.clientX;
   });
 
   wrap.addEventListener('pointermove', e => {
-    const moved = Math.abs(e.clientX - wrap._startX);
-    if (moved > 5) isDragging = true;
-    if (!isDragging) return;
+    if (!isPointerActive) return;
     const dx = lastX - e.clientX;
-    offset += dx;
-    const now = Date.now();
-    velocity = dx / Math.max(1, now - lastTime) * 16;
-    lastX = e.clientX; lastTime = now;
-    applyOffset();
-  });
-
-  wrap.addEventListener('pointerup', () => {
-    wrap.classList.remove('grabbing');
-    function momentum() {
-      if (Math.abs(velocity) < .1) { isDragging = false; return; }
-      offset += velocity; velocity *= .94;
-      applyOffset();
-      requestAnimationFrame(momentum);
+    const totalDelta = Math.abs(e.clientX - startX);
+    
+    if (totalDelta > 6) {
+      isDragging = true;
     }
-    momentum();
+    
+    if (isDragging) {
+      offset += dx;
+      const now = Date.now();
+      const dt = Math.max(1, now - lastTime);
+      velocity = (dx / dt) * 16;
+      lastX = e.clientX;
+      lastTime = now;
+      applyOffset();
+    }
   });
 
-  wrap.addEventListener('touchstart', e => { lastX = e.touches[0].clientX; isDragging = false; wrap._startX = lastX; }, { passive:true });
-  wrap.addEventListener('touchmove', e => {
-    const moved = Math.abs(e.touches[0].clientX - wrap._startX);
-    if (moved > 5) isDragging = true;
-    if (!isDragging) return;
-    offset += lastX - e.touches[0].clientX;
-    lastX = e.touches[0].clientX;
-    applyOffset();
-  }, { passive:true });
-  wrap.addEventListener('touchend', () => { setTimeout(() => { isDragging = false; }, 50); });
+  wrap.addEventListener('pointerup', e => {
+    if (!isPointerActive) return;
+    isPointerActive = false;
+    wrap.classList.remove('grabbing');
+    wrap.releasePointerCapture(e.pointerId);
+    
+    if (isDragging) {
+      function momentum() {
+        if (isPointerActive || Math.abs(velocity) < .1) { 
+          isDragging = false; 
+          return; 
+        }
+        offset += velocity;
+        velocity *= .94;
+        applyOffset();
+        requestAnimationFrame(momentum);
+      }
+      momentum();
+    } else {
+      const targetCard = e.target.closest('.proj-card');
+      if (targetCard) {
+        const idx = parseInt(targetCard.getAttribute('data-idx'));
+        openProject(idx);
+      }
+    }
+  });
 
-  // MARQUEE
+  wrap.addEventListener('pointercancel', e => {
+    isPointerActive = false;
+    isDragging = false;
+    wrap.classList.remove('grabbing');
+  });
+
   const marqueeItems = [
     {text:'Expo FITer 26',hi:true},{text:'Best Project Award'},{text:'Faculty of Information Technology'},
     {text:'Applied Science University'},{text:'Graduation Exhibition 2026',hi:true},{text:'5 Categories'},{text:'3 Judges'},{text:'ASU Jordan'},
