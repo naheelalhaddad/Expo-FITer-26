@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITer 26 – Projects</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght=0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght=300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -258,7 +258,7 @@
             <div class="overall-outof">out of 100</div>
           </div>
           <input type="range" id="overall-slider" min="0" max="100" value="75" oninput="updateOverall(this.value)" />
-          <div class="range-label" id="overall-range-label">Good — Solid project with minor areas for improvement</div>
+          <div class="range-label" id="overall-range-label">Good — Strong project with minor areas for improvement</div>
         </div>
         
         <div class="rating-divider"></div>
@@ -357,7 +357,7 @@
     ).join('');
   }
 
- function updateCardPositions() {
+  function updateCardPositions() {
     projects.forEach((_, i) => {
       const card = document.getElementById(`card-${i}`);
       if (!card) return;
@@ -377,30 +377,11 @@
     const stage = document.getElementById('stage');
     
     if (centerCard && stage && trackElement) {
-      // Force immediate geometry calculation matching current viewport dimensions
       const stageWidth = stage.getBoundingClientRect().width;
       const cardWidth = centerCard.getBoundingClientRect().width;
-      
-      // Calculate layout position relative to track container start point
       const cardOffsetLeft = centerCard.offsetLeft;
       
-      // Balance equation positioning focal point precisely at center coordinates
       const shift = cardOffsetLeft - (stageWidth / 2) + (cardWidth / 2);
-      
-      trackElement.style.transform = `translateX(${-shift}px)`;
-    }
-  }
-
-    const trackElement = document.getElementById('cards-track');
-    const centerCard = document.getElementById(`card-${currentIdx}`);
-    const stage = document.getElementById('stage');
-    if (centerCard && stage) {
-      let offsetBefore = 0;
-      const cards = [...trackElement.children];
-      cards.forEach((c, i) => {
-        if (i < currentIdx) offsetBefore += c.offsetWidth + 24;
-      });
-      const shift = offsetBefore + (centerCard.offsetWidth / 2) - (stage.offsetWidth / 2);
       trackElement.style.transform = `translateX(${-shift}px)`;
     }
   }
@@ -410,7 +391,6 @@
     updateCardPositions();
   }
 
-  // CENTRALIZED DELEGATION ENGINE: Resolves sub-element click translations on laptop trackpads
   const stageWrap = document.getElementById('stage');
   stageWrap.addEventListener('click', e => {
     const evalBtn = e.target.closest('[data-eval-idx]');
