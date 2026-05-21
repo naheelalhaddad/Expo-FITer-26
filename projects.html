@@ -357,7 +357,7 @@
     ).join('');
   }
 
-  function updateCardPositions() {
+ function updateCardPositions() {
     projects.forEach((_, i) => {
       const card = document.getElementById(`card-${i}`);
       if (!card) return;
@@ -371,6 +371,25 @@
     document.querySelectorAll('.dot').forEach((d, i) => {
       d.classList.toggle('active', i === currentIdx);
     });
+
+    const trackElement = document.getElementById('cards-track');
+    const centerCard = document.getElementById(`card-${currentIdx}`);
+    const stage = document.getElementById('stage');
+    
+    if (centerCard && stage && trackElement) {
+      // Force immediate geometry calculation matching current viewport dimensions
+      const stageWidth = stage.getBoundingClientRect().width;
+      const cardWidth = centerCard.getBoundingClientRect().width;
+      
+      // Calculate layout position relative to track container start point
+      const cardOffsetLeft = centerCard.offsetLeft;
+      
+      // Balance equation positioning focal point precisely at center coordinates
+      const shift = cardOffsetLeft - (stageWidth / 2) + (cardWidth / 2);
+      
+      trackElement.style.transform = `translateX(${-shift}px)`;
+    }
+  }
 
     const trackElement = document.getElementById('cards-track');
     const centerCard = document.getElementById(`card-${currentIdx}`);
