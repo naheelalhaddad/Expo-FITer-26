@@ -19,14 +19,12 @@
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
 
-    /* BACKGROUND VIDEO & GRADIENTS */
-    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(25px); opacity: 0.3; pointer-events: none; }
+    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.55; pointer-events: none; }
     .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.3) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
     .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
 
     .page { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
 
-    /* NAV */
     .nav { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
     .nav-left { display: flex; gap: 12px; align-items: center; }
     .logo-pill { background: #fff; border-radius: 100px; padding: 6px 16px; height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -39,20 +37,16 @@
     .nav-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
 
-    /* STAGE (FIXED CENTERING) */
     .stage { flex: 1; position: relative; overflow: hidden; width: 100%; }
 
-    /* ARROW BUTTONS */
     .arrow-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 20; width: 48px; height: 48px; border-radius: 50%; background: rgba(10,6,8,.6); border: 1px solid rgba(255,255,255,.12); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
     .arrow-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); transform: translateY(-50%) scale(1.08); }
     .arrow-btn:active { transform: translateY(-50%) scale(.96); }
     .arrow-btn.left { left: 2rem; }
     .arrow-btn.right { right: 2rem; }
 
-    /* CARDS TRACK */
     .cards-track { position: absolute; top: 50%; left: 0; display: flex; align-items: center; gap: 24px; width: max-content; will-change: transform; transition: transform .5s cubic-bezier(.22,1,.36,1); transform: translate(0, -50%); }
 
-    /* CARD */
     .proj-card { flex-shrink: 0; border-radius: 18px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,.07); cursor: pointer; transition: width .5s cubic-bezier(.22,1,.36,1), height .5s cubic-bezier(.22,1,.36,1), opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1), box-shadow .4s, border-color .4s; }
     .proj-card.side { width: clamp(180px, 20vw, 240px); height: clamp(240px, 40vh, 340px); opacity: .4; transform: scale(.9); }
     .proj-card.center { width: clamp(300px, 38vw, 460px); height: clamp(380px, 60vh, 540px); opacity: 1; transform: scale(1); border-color: rgba(255,255,255,.18); box-shadow: 0 32px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.05); cursor: default; }
@@ -77,7 +71,6 @@
     .proj-card-members { font-size: 11px; color: rgba(255,255,255,.38); line-height: 1.5; }
     .proj-card.side .proj-card-members, .proj-card.far .proj-card-members { display: none; }
 
-    /* EVALUATE BUTTON */
     .card-eval-btn { display: none; margin-top: 12px; width: 100%; height: 40px; border: none; border-radius: 8px; background: var(--maroon); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; align-items: center; justify-content: center; gap: 6px; transition: background .2s, transform .2s; }
     .proj-card.center .card-eval-btn { display: flex; }
     .card-eval-btn:hover { background: var(--maroon-mid); transform: translateY(-1px); }
@@ -85,12 +78,10 @@
 
     .voted-badge { display: none; margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #fff; text-align: center; background: rgba(107,26,42,0.3); border: 1px solid rgba(107,26,42,0.6); padding: 6px; border-radius: 6px; }
 
-    /* DOTS */
     .dots { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.2); transition: background .3s, transform .3s; cursor: pointer; }
     .dot.active { background: #fff; transform: scale(1.3); }
 
-    /* MARQUEE */
     .marquee-wrap { flex-shrink: 0; border-top: 1px solid var(--border); overflow: hidden; height: 36px; display: flex; align-items: center; }
     .marquee-track { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; width: max-content; }
     .marquee-item { display: inline-flex; align-items: center; gap: 14px; padding: 0 28px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -98,7 +89,6 @@
     .marquee-item.hi { color: rgba(255,255,255,.45); }
     @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-    /* EXPANDED OVERLAY */
     .expanded-overlay { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(10,6,8,.85); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); overflow-y: auto; padding: 2rem 1.5rem; }
     .expanded-overlay.visible { display: block; animation: overlay-in .35s cubic-bezier(.22,1,.36,1) both; }
     @keyframes overlay-in { from { opacity:0; } to { opacity:1; } }
@@ -175,13 +165,14 @@
       .arrow-btn { width: 38px; height: 38px; }
       .arrow-btn.left { left: .5rem; }
       .arrow-btn.right { right: .5rem; }
+      .info-meta-grid { grid-template-columns: 1fr; }
       .nav-left { flex-direction: column; align-items: flex-start; gap: 4px; }
     }
   </style>
 </head>
 <body>
 
-<video class="bg-video" autoplay loop muted playsinline>
+<video id="bg-video-stream" class="bg-video" autoplay loop muted playsinline>
   <source src="background.mp4" type="video/mp4" />
 </video>
 <div class="bg-layer"></div>
@@ -199,7 +190,7 @@
       </div>
     </div>
     <div class="nav-right">
-      <span class="nav-judge">[Judge Name]</span>
+      <span class="nav-judge">Judge 01</span>
       <span class="nav-progress" id="nav-progress">0 / 0 evaluated</span>
       <div class="nav-tag"><div class="nav-tag-dot"></div>Live</div>
     </div>
@@ -315,8 +306,7 @@
   const projects = [
     { num:'[Project Num 1]', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#6b1a2a','#300a12'], voted: false },
     { num:'[Project Num 2]', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#4a1020','#1f040b'], voted: false },
-    { num:'[Project Num 3]', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#8a2236','#400c19'], voted: false },
-    { num:'[Project Num 4]', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#5c1422','#29070e'], voted: false },
+    { num:'[Project Num 3]', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#8a2236','#400c19'], voted: false },    { num:'[Project Num 4]', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#5c1422','#29070e'], voted: false },
     { num:'[Project Num 5]', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract will appear here. A short description of the project, its goals, methodology, and expected outcomes.]', colors:['#7a1c2e','#380914'], voted: false },
   ];
 
@@ -390,8 +380,6 @@
     const stage = document.getElementById('stage');
     
     if (centerCard && stage && track) {
-      // By changing .cards-track to position:absolute left:0, 
-      // the left offset maps perfectly without fighting justification mechanics
       const stageWidth = stage.offsetWidth;
       const cardWidth = centerCard.offsetWidth;
       const cardOffsetLeft = centerCard.offsetLeft;
@@ -482,7 +470,6 @@
   }
 
   function confetti() {
-    // Maroon and white color palette for the confetti blast
     const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
     for (let i = 0; i < 60; i++) {
       setTimeout(() => {
@@ -496,14 +483,12 @@
     }
   }
 
-  // Keyboard Navigation
   document.addEventListener('keydown', e => {
     if (document.getElementById('expanded-overlay').classList.contains('visible')) return;
     if (e.key === 'ArrowLeft') navigate(-1);
     if (e.key === 'ArrowRight') navigate(1);
   });
 
-  // Updated Marquee (Specific terms removed as requested)
   const marqueeItems = [
     {text:'Expo FITers GP', hi:true},
     {text:'Faculty of Information Technology'},
@@ -516,7 +501,13 @@
 
   window.addEventListener('resize', updateCardPositions);
   
-  // INIT RUNNERS
+  window.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('bg-video-stream');
+    if (video) {
+      video.playbackRate = 0.5;
+    }
+  });
+
   buildCards();
   updateProgress();
 </script>
