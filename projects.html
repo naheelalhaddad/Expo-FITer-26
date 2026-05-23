@@ -19,7 +19,7 @@
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
 
-    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.55; pointer-events: none; }
+    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(5px); opacity: 0.75; pointer-events: none; }
     .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.3) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
     .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
 
@@ -504,7 +504,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('bg-video-stream');
     if (video) {
-      video.playbackRate = 0.5;
+      video.playbackRate = 0.25;
     }
   });
 
