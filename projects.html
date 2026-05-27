@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
@@ -32,7 +31,6 @@
     .brand-container { height: 90px; display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
     .brand-container img { height: 100%; width: auto; max-height: 70px; object-fit: contain; }
     
-    /* PARTNER LOGOS: Scaled transparent wrapper */
     .partner-container { height: 56px; display: flex; align-items: center; gap: 20px; border-left: 1px solid var(--border); padding-left: 24px; }
     .partner-container img { height: 100%; width: auto; max-height: 56px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
     
@@ -43,6 +41,7 @@
     .controls-row { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; border-bottom: 1px solid var(--border); background: rgba(10,6,8,0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 15; }
     .search-bar { width: 100%; max-width: 460px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s, background-color 0.2s; }
     .search-bar:focus { border-color: var(--maroon); background: rgba(255,255,255,0.07); }
+    .search-bar::placeholder { color: var(--muted); }
     
     .category-slider { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .category-slider::-webkit-scrollbar { display: none; }
@@ -133,6 +132,7 @@
     input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); outline: none; cursor: pointer; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5); cursor: pointer; transition: transform .15s; }
     input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 
     .rating-divider { height: 1px; background: var(--border); }
     .overall-wrap { display: flex; flex-direction: column; gap: 12px; }
@@ -143,6 +143,7 @@
     .btn-submit { width: 100%; height: 56px; border: none; border-radius: 12px; background: var(--maroon); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; box-shadow: 0 6px 24px rgba(107,26,42,.5); }
     .btn-submit:hover { background: var(--red); transform: translateY(-2px); }
     .btn-submit:active { transform: scale(.98); }
+    .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
     .submit-note { font-size: 12px; color: var(--sub); text-align: center; margin-top: 8px; }
 
     .locked-state { display: none; flex-direction: column; align-items: center; gap: 1.25rem; padding: 3rem 2rem; text-align: center; }
@@ -152,6 +153,13 @@
     .locked-title { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 900; text-transform: uppercase; color: #fff; }
     .locked-sub { font-size: 15px; color: var(--sub); }
     .locked-score-badge { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 500; color: #fff; background: rgba(107,26,42,.4); border: 1px solid rgba(195,30,45,.4); border-radius: 8px; padding: 12px 24px; margin-top: 10px; }
+
+    .confetti-piece { position: fixed; border-radius: 2px; pointer-events: none; z-index: 1000; animation: confetti-fall linear forwards; }
+    @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity:1; } 100% { transform: translateY(100vh) rotate(720deg); opacity:0; } }
+
+    .error-toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #3a0a0a; border: 1px solid var(--red); color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 12px 20px; border-radius: 8px; z-index: 200; display: none; }
+    .error-toast.visible { display: block; animation: fade-up .3s ease both; }
+    @keyframes fade-up { from { opacity:0; transform: translateX(-50%) translateY(10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
 
     @media (max-width: 900px) {
       .nav { padding: 1rem; justify-content: center; flex-direction: column; gap: 14px; height: auto; }
@@ -164,11 +172,12 @@
       .cards-track { padding: 2rem calc(50vw - 150px); }
       .controls-row { padding: 1rem; align-items: center; }
       .search-bar { max-width: 100%; }
+      .info-meta-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
- 
+
 <video id="bg-video-stream" class="bg-video" autoplay loop muted playsinline>
   <source src="background.mp4" type="video/mp4" />
 </video>
@@ -193,7 +202,7 @@
   </div>
 
   <div class="controls-row">
-    <input type="search" id="search-input" class="search-bar" placeholder="Search projects by descriptor..." oninput="filterProjects()" />
+    <input type="search" id="search-input" class="search-bar" placeholder="Search projects..." oninput="filterProjects()" />
     <div class="category-slider" id="category-slider"></div>
   </div>
 
@@ -275,19 +284,19 @@
         <div class="rating-divider"></div>
         
         <div id="voting-ui">
-          <button class="btn-submit" onclick="submitVoteToGoogleForms()" id="submit-btn-element">
+          <button class="btn-submit" id="submit-btn-element" onclick="submitVote()">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="submit-note">Scores cannot be altered once transmitted to the database.</div>
+          <div class="submit-note">Scores cannot be altered once submitted.</div>
         </div>
         
         <div class="locked-state" id="locked-state">
           <div class="locked-icon">
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M7 11V8a6 6 0 0112 0v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="3" y="11" width="20" height="12" rx="2.5" stroke="#fff" stroke-width="2"/><circle cx="13" cy="18" r="2" fill="#fff"/></svg>
           </div>
-          <div class="locked-title">Transmission Successful</div>
-          <div class="locked-sub">Evaluation data stored securely.</div>
+          <div class="locked-title">Score Submitted</div>
+          <div class="locked-sub">Your evaluation has been recorded.</div>
           <div class="locked-score-badge" id="locked-score-text"></div>
         </div>
       </div>
@@ -296,17 +305,32 @@
   </div>
 </div>
 
-<script>
-  const ACTIVE_JUDGE_ID = "judge_01"; 
+<div class="error-toast" id="error-toast"></div>
 
-  const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
+<!-- ── SUPABASE SDK ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  // ── SUPABASE CONFIG — replace these two values ──
+  const SUPABASE_URL  = 'https://bpddzqbuqdmvubuzerem.supabase.co';
+  const SUPABASE_KEY  = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── JUDGE IDENTITY ──
+  // Reads from sessionStorage so login page can set it.
+  // Falls back to hardcoded value for testing.
+  const ACTIVE_JUDGE_EMAIL = sessionStorage.getItem('judge_email') || 'judge01@test.com';
+  const ACTIVE_JUDGE_ID    = sessionStorage.getItem('judge_id')    || 'JUDGE_01';
+
+  // ── DATA ──
+  const categories = ['[Category 1]','[Category 2]','[Category 3]','[Category 4]','[Category 5]'];
 
   const projects = [
-    { num:'[Project Num 1]', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#6b1a2a','#300a12'], voted: false },
-    { num:'[Project Num 2]', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#4a1020','#1f040b'], voted: false },
-    { num:'[Project Num 3]', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#8a2236','#400c19'], voted: false },
-    { num:'[Project Num 4]', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#5c1422','#29070e'], voted: false },
-    { num:'[Project Num 5]', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#7a1c2e','#380914'], voted: false }
+    { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder.]', colors:['#6b1a2a','#300a12'], voted:false },
+    { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder.]', colors:['#4a1020','#1f040b'], voted:false },
+    { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder.]', colors:['#8a2236','#400c19'], voted:false },
+    { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder.]', colors:['#5c1422','#29070e'], voted:false },
+    { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder.]', colors:['#7a1c2e','#380914'], voted:false },
   ];
 
   const rangeLabels = [
@@ -325,10 +349,11 @@
   ];
 
   let currentProject = null;
-  let overallValue = 75;
-  let criteriaValues = {};
-  let activeCategory = 'All';
+  let overallValue    = 75;
+  let criteriaValues  = {};
+  let activeCategory  = 'All';
 
+  // ── HELPERS ──
   function getRangeLabel(val) {
     return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label;
   }
@@ -338,41 +363,48 @@
     document.getElementById('nav-progress').textContent = `${voted} / ${projects.length} EVALUATED`;
   }
 
+  function showError(msg) {
+    const t = document.getElementById('error-toast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), 4000);
+  }
+
+  // ── CATEGORIES ──
   function initCategories() {
-    const catContainer = document.getElementById('category-slider');
-    let catHTML = `<div class="cat-pill active" onclick="setCategory('All', this)">All Categories</div>`;
-    categories.forEach(c => {
-      catHTML += `<div class="cat-pill" onclick="setCategory('${c}', this)">${c}</div>`;
+    const container = document.getElementById('category-slider');
+    container.innerHTML =
+      `<div class="cat-pill active" data-cat="All">All Categories</div>` +
+      categories.map(c => `<div class="cat-pill" data-cat="${c}">${c}</div>`).join('');
+    container.querySelectorAll('.cat-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        container.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeCategory = pill.dataset.cat;
+        filterProjects();
+      });
     });
-    catContainer.innerHTML = catHTML;
   }
 
-  function setCategory(cat, el) {
-    activeCategory = cat;
-    document.querySelectorAll('.cat-pill').forEach(pill => pill.classList.remove('active'));
-    el.classList.add('active');
-    filterProjects();
-  }
-
+  // ── FILTER + RENDER ──
   function filterProjects() {
-    const query = document.getElementById('search-input').value.toLowerCase();
+    const query = document.getElementById('search-input').value.toLowerCase().trim();
     const filtered = projects.filter(p => {
-      const matchCategory = activeCategory === 'All' || p.category === activeCategory;
-      const matchSearch = p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query);
-      return matchCategory && matchSearch;
+      const matchCat    = activeCategory === 'All' || p.category === activeCategory;
+      const matchSearch = !query || p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query);
+      return matchCat && matchSearch;
     });
     renderCards(filtered);
   }
 
   function renderCards(dataSet) {
     const trackElement = document.getElementById('cards-track');
-    
-    const offsetCalc = (window.innerWidth / 2) - 175;
-    trackElement.style.paddingLeft = `${Math.max(32, offsetCalc)}px`;
-    trackElement.style.paddingRight = `${Math.max(32, offsetCalc)}px`;
+    const offsetCalc = Math.max(32, (window.innerWidth / 2) - 175);
+    trackElement.style.paddingLeft  = offsetCalc + 'px';
+    trackElement.style.paddingRight = offsetCalc + 'px';
 
     if (dataSet.length === 0) {
-      trackElement.innerHTML = `<div style="color:var(--sub); padding:4rem; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; width:100%; text-align:center;">No project descriptors match search indices.</div>`;
+      trackElement.innerHTML = `<div style="color:var(--sub);padding:4rem;font-family:'IBM Plex Mono';font-size:11px;text-transform:uppercase;letter-spacing:0.1em;width:100%;text-align:center;">No projects match your search.</div>`;
       buildDots(0);
       return;
     }
@@ -380,117 +412,103 @@
     trackElement.innerHTML = dataSet.map(p => {
       const globalIdx = projects.findIndex(orig => orig.num === p.num);
       return `
-      <div class="proj-card" onclick="openEval(${globalIdx})">
-        <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)">
-          <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.12" preserveAspectRatio="none" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
-            <path d="M-50 150 Q200 50 450 200" stroke="white" stroke-width="70" fill="none" opacity=".3"/>
-            <path d="M-50 320 Q200 200 450 370" stroke="white" stroke-width="45" fill="none" opacity=".2"/>
-          </svg>
-        </div>
-        <div class="proj-card-overlay"></div>
-        <div class="proj-card-content">
-          <div class="proj-card-tag">${p.category}</div>
-          <div class="proj-card-num">${p.num}</div>
-          <div class="proj-card-name">${p.name}</div>
-          <div class="proj-card-members">${p.members.slice(0,3).join(' · ')}</div>
-          <button class="card-eval-btn">
-            Evaluate Project
-            <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          ${p.voted ? `<div class="voted-badge" style="display:block">✓ Evaluation Transmitted</div>` : ''}
-        </div>
-      </div>
-    `}).join('');
+        <div class="proj-card" onclick="openEval(${globalIdx})">
+          <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)">
+            <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.12" preserveAspectRatio="none" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+              <path d="M-50 150 Q200 50 450 200" stroke="white" stroke-width="70" fill="none" opacity=".3"/>
+              <path d="M-50 320 Q200 200 450 370" stroke="white" stroke-width="45" fill="none" opacity=".2"/>
+            </svg>
+          </div>
+          <div class="proj-card-overlay"></div>
+          <div class="proj-card-content">
+            <div class="proj-card-tag">${p.category}</div>
+            <div class="proj-card-num">${p.num}</div>
+            <div class="proj-card-name">${p.name}</div>
+            <div class="proj-card-members">${p.members.slice(0,3).join(' · ')}</div>
+            <button class="card-eval-btn" onclick="event.stopPropagation();openEval(${globalIdx})">
+              Evaluate Project
+              <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M7.5 3l3.5 3.5L7.5 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            ${p.voted ? `<div class="voted-badge">✓ Evaluation Submitted</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
     buildDots(dataSet.length);
   }
 
   function buildDots(count) {
-    const dotsContainer = document.getElementById('dots');
-    let dotsHTML = '';
-    for(let i=0; i<count; i++) {
-      dotsHTML += `<div class="dot ${i===0?'active':''}" onclick="scrollToCard(${i})"></div>`;
-    }
-    dotsContainer.innerHTML = dotsHTML;
+    document.getElementById('dots').innerHTML = Array.from({length:count}, (_,i) =>
+      `<div class="dot ${i===0?'active':''}" onclick="scrollToCard(${i})"></div>`
+    ).join('');
   }
 
   function scrollToCard(index) {
     const track = document.getElementById('cards-track');
-    if(track.children[index]) {
-      track.children[index].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (track.children[index]) {
+      track.children[index].scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
     }
   }
 
   document.getElementById('cards-track').addEventListener('scroll', () => {
-    const track = document.getElementById('cards-track');
-    const cards = [...track.children];
-    if(cards.length === 0) return;
-    
-    const trackCenter = track.scrollLeft + (track.offsetWidth / 2);
-    let closestIndex = 0;
-    let minDistance = Infinity;
-    
-    cards.forEach((card, i) => {
-      const cardCenter = card.offsetLeft + (card.offsetWidth / 2);
-      const dist = Math.abs(trackCenter - cardCenter);
-      if(dist < minDistance) {
-        minDistance = dist;
-        closestIndex = i;
-      }
+    const track   = document.getElementById('cards-track');
+    const cards   = [...track.children];
+    if (!cards.length) return;
+    const center  = track.scrollLeft + track.offsetWidth / 2;
+    let closest = 0, minDist = Infinity;
+    cards.forEach((c, i) => {
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+      if (d < minDist) { minDist = d; closest = i; }
     });
-    
-    document.querySelectorAll('.dot').forEach((d, i) => {
-      d.classList.toggle('active', i === closestIndex);
-    });
+    document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i === closest));
   });
 
+  // ── OPEN EVAL ──
   function openEval(idx) {
-    currentProject = projects[idx];
-    overallValue = 75;
-    criteriaValues = {};
+    currentProject  = projects[idx];
+    overallValue    = 75;
+    criteriaValues  = {};
     criteria.forEach(c => criteriaValues[c.key] = 75);
-    const p = currentProject;
-    
+    const p    = currentProject;
+    const voted = p.voted;
+
     document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
-    document.getElementById('exp-tag').textContent = p.category;
-    document.getElementById('exp-num').textContent = p.num;
-    document.getElementById('exp-name').textContent = p.name;
-    document.getElementById('exp-abstract').textContent = p.abstract;
+    document.getElementById('exp-tag').textContent        = p.category;
+    document.getElementById('exp-num').textContent        = p.num;
+    document.getElementById('exp-name').textContent       = p.name;
+    document.getElementById('exp-abstract').textContent   = p.abstract;
     document.getElementById('exp-supervisor').textContent = p.supervisor;
-    document.getElementById('exp-category').textContent = p.category;
+    document.getElementById('exp-category').textContent   = p.category;
     document.getElementById('exp-members').innerHTML = p.members.map(m =>
       `<div class="member-item"><div class="member-dot"></div>${m}</div>`
     ).join('');
 
-    document.getElementById('criteria-list').innerHTML = criteria.map(c => {
-      const key = c.key;
-      return `
-        <div class="criterion">
-          <div class="criterion-header">
-            <span class="criterion-name">${c.name}</span>
-            <span class="criterion-score-display" id="score-${key}">75 / 100</span>
-          </div>
-          <input type="range" min="0" max="100" value="75" oninput="updateCriterion('${key}', this.value)" ${p.voted ? 'disabled' : ''}/>
-          <div class="range-hint"><span>0</span><span>50</span><span>100</span></div>
-          <div class="range-label" id="label-${key}">${getRangeLabel(75)}</div>
+    document.getElementById('criteria-list').innerHTML = criteria.map(c => `
+      <div class="criterion">
+        <div class="criterion-header">
+          <span class="criterion-name">${c.name}</span>
+          <span class="criterion-score-display" id="score-${c.key}">75 / 100</span>
         </div>
-      `;
-    }).join('');
+        <input type="range" min="0" max="100" value="75" ${voted?'disabled':''}
+               oninput="updateCriterion('${c.key}', this.value)" />
+        <div class="range-hint"><span>0</span><span>50</span><span>100</span></div>
+        <div class="range-label" id="label-${c.key}">${getRangeLabel(75)}</div>
+      </div>`
+    ).join('');
 
-    document.getElementById('overall-num').textContent = p.voted ? 'LOCKED' : 75;
-    document.getElementById('overall-slider').value = 75;
-    document.getElementById('overall-slider').disabled = p.voted;
-    document.getElementById('overall-range-label').textContent = getRangeLabel(75);
-    
-    document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
-    const lockedState = document.getElementById('locked-state');
-    
-    if(p.voted) {
-      lockedState.classList.add('visible');
-      document.getElementById('locked-score-text').textContent = "Evaluation Status: Locked in Forms Database";
+    document.getElementById('overall-num').textContent          = voted ? 'LOCKED' : 75;
+    document.getElementById('overall-slider').value             = 75;
+    document.getElementById('overall-slider').disabled          = voted;
+    document.getElementById('overall-range-label').textContent  = getRangeLabel(75);
+    document.getElementById('voting-ui').style.display          = voted ? 'none' : 'block';
+
+    const ls = document.getElementById('locked-state');
+    if (voted) {
+      ls.classList.add('visible');
+      document.getElementById('locked-score-text').textContent = 'This project has already been evaluated.';
     } else {
-      lockedState.classList.remove('visible');
+      ls.classList.remove('visible');
     }
-    
+
     const ov = document.getElementById('expanded-overlay');
     ov.classList.add('visible');
     ov.scrollTop = 0;
@@ -502,72 +520,80 @@
 
   function updateCriterion(key, val) {
     criteriaValues[key] = parseInt(val);
-    document.getElementById(`score-${key}`).textContent = `${val} / 100`;
-    document.getElementById(`label-${key}`).textContent = getRangeLabel(parseInt(val));
+    document.getElementById(`score-${key}`).textContent  = `${val} / 100`;
+    document.getElementById(`label-${key}`).textContent  = getRangeLabel(parseInt(val));
   }
 
   function updateOverall(val) {
     overallValue = parseInt(val);
-    document.getElementById('overall-num').textContent = val;
-    document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
+    document.getElementById('overall-num').textContent          = val;
+    document.getElementById('overall-range-label').textContent  = getRangeLabel(parseInt(val));
   }
 
-  async function submitVoteToSupabase() {
+  // ── SUBMIT → SUPABASE ──
+  async function submitVote() {
     const btn = document.getElementById('submit-btn-element');
-    btn.textContent = "Transmitting to Database...";
-    btn.disabled = true;
+    btn.disabled    = true;
+    btn.textContent = 'Submitting...';
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('evaluations')
-      .insert([
-        { 
-          judge_email: window.ACTIVE_USER_EMAIL, 
-          project_num: currentProject.num, 
-          score: overallValue 
-        }
-      ]);
+      .insert([{
+        judge_email: ACTIVE_JUDGE_EMAIL,
+        project_num: currentProject.num,
+        c1:          criteriaValues['c1'] ?? null,
+        c2:          criteriaValues['c2'] ?? null,
+        c3:          criteriaValues['c3'] ?? null,
+        overall:     overallValue,
+      }]);
 
     if (error) {
-      btn.textContent = "Transmission Failed";
-      btn.style.backgroundColor = "var(--red)";
-      console.error(error);
-    } else {
-      finalizeSubmissionUI();
+      // Unique constraint violation = already voted
+      if (error.code === '23505') {
+        showError('You have already evaluated this project.');
+        const idx = projects.indexOf(currentProject);
+        if (idx !== -1) projects[idx].voted = true;
+        filterProjects();
+        document.getElementById('voting-ui').style.display = 'none';
+        document.getElementById('locked-score-text').textContent = 'This project has already been evaluated.';
+        document.getElementById('locked-state').classList.add('visible');
+      } else {
+        showError('Submission failed. Please try again.');
+        btn.disabled    = false;
+        btn.textContent = 'Submit Evaluation';
+      }
+      return;
     }
-  }
-  function finalizeSubmissionUI() {
+
+    // Success
     const idx = projects.indexOf(currentProject);
     if (idx !== -1) projects[idx].voted = true;
-    
-    document.getElementById('voting-ui').style.display = 'none';
-    document.getElementById('locked-score-text').textContent = `Overall Score Form Post: ${overallValue} / 100`;
+    document.getElementById('voting-ui').style.display         = 'none';
+    document.getElementById('locked-score-text').textContent   = `Overall score: ${overallValue} / 100`;
     document.getElementById('locked-state').classList.add('visible');
-    
     updateProgress();
     filterProjects();
     confetti();
   }
+
+  // ── LOAD PAST VOTES ON PAGE OPEN ──
   async function lockPastEvaluations() {
-    const { data: pastVotes, error } = await supabase
+    const { data, error } = await supabase
       .from('evaluations')
       .select('project_num')
-      .eq('judge_email', window.ACTIVE_USER_EMAIL);
+      .eq('judge_email', ACTIVE_JUDGE_EMAIL);
 
-    if (!error && pastVotes) {
-      pastVotes.forEach(vote => {
-        const idx = projects.findIndex(p => p.num === vote.project_num);
+    if (!error && data) {
+      data.forEach(row => {
+        const idx = projects.findIndex(p => p.num === row.project_num);
         if (idx !== -1) projects[idx].voted = true;
       });
     }
-    
-    renderCards(projects);
+    filterProjects();
     updateProgress();
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(lockPastEvaluations, 500); 
-  });
-
+  // ── CONFETTI ──
   function confetti() {
     const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
     for (let i = 0; i < 60; i++) {
@@ -582,54 +608,24 @@
     }
   }
 
+  // ── MARQUEE ──
   const marqueeItems = [
-    {text:'Expo FITers GP', hi:true},
-    {text:'Live Project Evaluations'},
-    {text:'Applied Science University'},
-    {text:'Graduation Exhibition 2026', hi:true}
+    {text:'Expo FITers GP',hi:true},{text:'Live Project Evaluations'},
+    {text:'Applied Science University'},{text:'Graduation Exhibition 2026',hi:true}
   ];
-  document.getElementById('marquee-track').innerHTML = [...marqueeItems,...marqueeItems,...marqueeItems].map(i =>
-    `<span class="marquee-item ${i.hi?'hi':''}"><span class="marquee-sep"></span>${i.text}</span>`
-  ).join('');
+  document.getElementById('marquee-track').innerHTML =
+    [...marqueeItems,...marqueeItems,...marqueeItems].map(i =>
+      `<span class="marquee-item ${i.hi?'hi':''}"><span class="marquee-sep"></span>${i.text}</span>`
+    ).join('');
 
   window.addEventListener('resize', filterProjects);
 
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('judge-id-display').textContent = ACTIVE_JUDGE_ID.toUpperCase();
-    const video = document.getElementById('bg-video-stream');
-    if (video) { video.playbackRate = 0.5; }
-    
-    initCategories();
-    renderCards(projects);
-    updateProgress();
-  });
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL';
-  const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-  async function lockPastEvaluations() {
-    const { data: pastVotes, error } = await supabase
-      .from('evaluations')
-      .select('project_num')
-      .eq('judge_email', window.ACTIVE_USER_EMAIL);
-
-    if (!error && pastVotes) {
-      pastVotes.forEach(vote => {
-        const idx = projects.findIndex(p => p.num === vote.project_num);
-        if (idx !== -1) projects[idx].voted = true;
-      });
-    }
-    
-    renderCards(projects);
-    updateProgress();
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(lockPastEvaluations, 500); 
-  });
-
+  // ── INIT ──
+  document.getElementById('judge-id-display').textContent = ACTIVE_JUDGE_ID;
+  const video = document.getElementById('bg-video-stream');
+  if (video) video.playbackRate = 0.5;
+  initCategories();
+  lockPastEvaluations(); // fetches past votes then renders cards
 </script>
 </body>
 </html>
