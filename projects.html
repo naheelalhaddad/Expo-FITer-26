@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -39,6 +41,24 @@
     .nav-judge { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); letter-spacing: 0.05em; text-transform: uppercase; }
     .nav-progress { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--sub); background: rgba(255,255,255,0.04); padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); letter-spacing: 0.04em; }
     
+    .logout-btn{
+  height:40px;
+  border:none;
+  border-radius:8px;
+  background:var(--maroon);
+  color:#fff;
+  padding:0 16px;
+  cursor:pointer;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  transition:all .2s;
+}
+
+.logout-btn:hover{
+  background:var(--maroon-mid);
+}
     .controls-row { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; border-bottom: 1px solid var(--border); background: rgba(10,6,8,0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 15; }
     .search-bar { width: 100%; max-width: 460px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s, background-color 0.2s; }
     .search-bar:focus { border-color: var(--maroon); background: rgba(255,255,255,0.07); }
@@ -185,10 +205,17 @@
         <img src="FITer_white_logo.png" alt="Faculty of IT" />
       </div>
     </div>
-    <div class="nav-right">
-      <span class="nav-judge" id="judge-id-display">JUDGE_01</span>
-      <span class="nav-progress" id="nav-progress">0 / 0 EVALUATED</span>
-    </div>
+   <div class="nav-right">
+  <span class="nav-judge" id="judge-id-display">JUDGE_01</span>
+
+  <span class="nav-progress" id="nav-progress">
+    0 / 0 EVALUATED
+  </span>
+
+  <button class="logout-btn" onclick="logout()">
+    Logout
+  </button>
+</div>
   </div>
 
   <div class="controls-row">
@@ -274,7 +301,7 @@
         <div class="rating-divider"></div>
         
         <div id="voting-ui">
-          <button class="btn-submit" onclick="submitVoteToGoogleForms()" id="submit-btn-element">
+          <button class="btn-submit" onclick="submitEvaluation()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -296,6 +323,11 @@
 </div>
 
 <script>
+  const supabaseUrl = 'https://bpddzqbuqdmvubuzerem.supabase.co';
+const supabaseAnonKey = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+let ACTIVE_JUDGE_EMAIL = "";
   const ACTIVE_JUDGE_ID = "judge_01"; 
 
   const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
@@ -485,7 +517,8 @@
     
     if(p.voted) {
       lockedState.classList.add('visible');
-      document.getElementById('locked-score-text').textContent = "Evaluation Status: Locked in Forms Database";
+      document.getElementById('locked-score-text').textContent =
+  `Overall Score Stored: ${p.savedScore} / 100`
     } else {
       lockedState.classList.remove('visible');
     }
@@ -511,46 +544,80 @@
     document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
   }
 
-  function submitVoteToGoogleForms() {
-    const btn = document.getElementById('submit-btn-element');
-    btn.textContent = "Transmitting to Sheets...";
-    btn.disabled = true;
+ async function submitEvaluation() {
 
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfp7N8N4mD-fake-id-placeholder/formResponse"; 
-    const ENTRY_JUDGE = "entry.1000001";
-    const ENTRY_PROJECT = "entry.1000002";
-    const ENTRY_SCORE = "entry.1000003";
-    
-    const formData = new URLSearchParams();
-    formData.append(ENTRY_JUDGE, ACTIVE_JUDGE_ID);
-    formData.append(ENTRY_PROJECT, currentProject.num);
-    formData.append(ENTRY_SCORE, overallValue);
-    
-    fetch(FORM_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString()
-    }).then(() => {
-      finalizeSubmissionUI();
-    }).catch(() => {
-      finalizeSubmissionUI();
-    });
+  const btn = document.getElementById('submit-btn-element');
+
+  btn.textContent = "Submitting...";
+  btn.disabled = true;
+
+  const payload = {
+    judge_email: ACTIVE_JUDGE_EMAIL,
+    project_num: currentProject.num,
+
+    criterion_1: criteriaValues.c1,
+    criterion_2: criteriaValues.c2,
+    criterion_3: criteriaValues.c3,
+
+    overall_score: overallValue
+  };
+
+  const { error } = await supabase
+    .from('evaluations')
+    .insert(payload);
+
+  if (error) {
+
+    alert(error.message);
+
+    btn.textContent = "Submit Evaluation";
+    btn.disabled = false;
+
+    return;
   }
+
+  finalizeSubmissionUI();
+}
 
   function finalizeSubmissionUI() {
     const idx = projects.indexOf(currentProject);
     if (idx !== -1) projects[idx].voted = true;
     
     document.getElementById('voting-ui').style.display = 'none';
-    document.getElementById('locked-score-text').textContent = `Overall Score Form Post: ${overallValue} / 100`;
+   document.getElementById('locked-score-text').textContent =
+`Overall Score Stored: ${currentProject.savedScore || overallValue} / 100`;
     document.getElementById('locked-state').classList.add('visible');
     
     updateProgress();
     filterProjects();
     confetti();
   }
+async function loadExistingVotes() {
 
+  const { data, error } = await supabase
+    .from('evaluations')
+    .select('project_num, overall_score')
+    .eq('judge_email', ACTIVE_JUDGE_EMAIL);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  data.forEach(vote => {
+
+    const project = projects.find(
+      p => p.num === vote.project_num
+    );
+
+    if (project) {
+      project.voted = true;
+      project.savedScore = vote.overall_score;
+    }
+  });
+
+  renderCards(projects);
+}
   function confetti() {
     const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
     for (let i = 0; i < 60; i++) {
@@ -576,15 +643,36 @@
   ).join('');
 
   window.addEventListener('resize', filterProjects);
+async function logout() {
+  await supabase.auth.signOut();
+  window.location.replace('index.html');
+}
+ window.addEventListener('DOMContentLoaded', async () => {
 
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('judge-id-display').textContent = ACTIVE_JUDGE_ID.toUpperCase();
-    const video = document.getElementById('bg-video-stream');
-    if (video) { video.playbackRate = 0.5; }
-    
-    initCategories();
-    renderCards(projects);
-    updateProgress();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    window.location.replace('index.html');
+    return;
+  }
+
+  ACTIVE_JUDGE_EMAIL = session.user.email;
+
+  document.getElementById('judge-id-display').textContent =
+    ACTIVE_JUDGE_EMAIL.toUpperCase();
+
+  const video = document.getElementById('bg-video-stream');
+  if (video) {
+    video.playbackRate = 0.5;
+  }
+
+  initCategories();
+  renderCards(projects);
+
+  await loadExistingVotes();
+
+  updateProgress();
+
   });
 </script>
 </body>
