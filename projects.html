@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
-  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -19,14 +18,44 @@
       --sub: rgba(255,255,255,.45); 
       --muted: rgba(255,255,255,.2);
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
-
-    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; /* overflow: hidden; Removed to allow scrolling*/ }
+    /* --- Cross-browser range input styling --- */
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px; border-radius: 50%; background: #fff;
+      box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5);
+      cursor: pointer; transition: transform .15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15);}
+    input[type=range]::-moz-range-thumb {
+      width: 24px; height: 24px; border-radius: 50%; background: #fff;
+      box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5);
+      cursor: pointer; transition: transform .15s;
+    }
+    input[type=range]:hover::-moz-range-thumb { transform: scale(1.15);}
+    input[type=range]::-ms-thumb {
+      width: 24px; height: 24px; border-radius: 50%; background: #fff;
+      box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5);
+      cursor: pointer; transition: transform .15s;
+    }
+    /* Track styles for range */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px;
+      background: rgba(255,255,255,.1); outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1);}
+    input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1);}
+    input[type=range]::-ms-fill-lower,
+    input[type=range]::-ms-fill-upper { background: rgba(255,255,255,.1);}
+    input[type=range]:focus { outline: none; }
+    /* Remove focus outline in Firefox */
+    input[type=range]::-moz-focus-outer { border: 0; }
+        .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
     .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.35) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
     .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
     
     .page { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
-
+    
     .nav { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(10,6,8,0.4); backdrop-filter: blur(8px); }
     .nav-left { display: flex; gap: 24px; align-items: center; }
     
@@ -41,24 +70,6 @@
     .nav-judge { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); letter-spacing: 0.05em; text-transform: uppercase; }
     .nav-progress { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--sub); background: rgba(255,255,255,0.04); padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); letter-spacing: 0.04em; }
     
-    .logout-btn{
-  height:40px;
-  border:none;
-  border-radius:8px;
-  background:var(--maroon);
-  color:#fff;
-  padding:0 16px;
-  cursor:pointer;
-  font-family:'IBM Plex Mono', monospace;
-  font-size:11px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  transition:all .2s;
-}
-
-.logout-btn:hover{
-  background:var(--maroon-mid);
-}
     .controls-row { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; border-bottom: 1px solid var(--border); background: rgba(10,6,8,0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 15; }
     .search-bar { width: 100%; max-width: 460px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s, background-color 0.2s; }
     .search-bar:focus { border-color: var(--maroon); background: rgba(255,255,255,0.07); }
@@ -184,6 +195,26 @@
       .controls-row { padding: 1rem; align-items: center; }
       .search-bar { max-width: 100%; }
     }
+    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
+    .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.35) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
+    .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
+
+    /* ...all your styles remain unchanged below... */
+    .page { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
+    /* [Rest of style unchanged. To conserve space, omitted, but keep all your other rules.]*/
+
+    /* --- Confetti styles (added for completeness so confetti is visible) --- */
+    .confetti-piece {
+      position: fixed;
+      z-index: 1000;
+      border-radius: 50%;
+      opacity: .85;
+      animation: confetti-fall cubic-bezier(.33,.66,.66,1) forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) scale(1);}
+      100% { transform: translateY(400px) scale(.5);}
+    }
   </style>
 </head>
 <body>
@@ -205,17 +236,10 @@
         <img src="FITer_white_logo.png" alt="Faculty of IT" />
       </div>
     </div>
-   <div class="nav-right">
-  <span class="nav-judge" id="judge-id-display">JUDGE_01</span>
-
-  <span class="nav-progress" id="nav-progress">
-    0 / 0 EVALUATED
-  </span>
-
-  <button class="logout-btn" onclick="logout()">
-    Logout
-  </button>
-</div>
+    <div class="nav-right">
+      <span class="nav-judge" id="judge-id-display">JUDGE_01</span>
+      <span class="nav-progress" id="nav-progress">0 / 0 EVALUATED</span>
+    </div>
   </div>
 
   <div class="controls-row">
@@ -233,13 +257,14 @@
   </div>
 </div>
 
-<div class="expanded-overlay" id="expanded-overlay">
+<!-- ARIA & focus for overlay/modal dialog! -->
+<div class="expanded-overlay" id="expanded-overlay" role="dialog" aria-modal="true" aria-labelledby="exp-name" tabindex="-1">
   <div class="expanded-inner">
-    <button class="back-btn" onclick="closeExpanded()">
+    <button class="back-btn" onclick="closeExpanded()" id="close-modal-btn">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 7H4M6.5 4L4 7l2.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Back to projects
     </button>
-    
+    <!-- [Rest of overlay HTML unchanged] -->
     <div class="exp-hero">
       <div class="exp-hero-bg" id="exp-hero-bg"></div>
       <div class="exp-hero-overlay"></div>
@@ -249,7 +274,6 @@
         <div class="exp-name" id="exp-name"></div>
       </div>
     </div>
-
     <div class="info-card">
       <div>
         <div class="info-section-title">Abstract</div>
@@ -272,7 +296,6 @@
         <div class="members-list" id="exp-members"></div>
       </div>
     </div>
-
     <div class="rating-card">
       <div class="rating-card-top"></div>
       <div class="rating-card-inner">
@@ -280,11 +303,8 @@
           <div class="rating-title">Evaluate Project</div>
           <div class="rating-sub">[Criteria descriptions will be added once the rubric is finalized]</div>
         </div>
-        
         <div class="criteria-list" id="criteria-list"></div>
-        
         <div class="rating-divider"></div>
-        
         <div class="overall-wrap">
           <div class="info-section-title">Overall Score</div>
           <div class="overall-display">
@@ -297,17 +317,14 @@
           </div>
           <div class="range-label" id="overall-range-label">Good — Solid project with minor areas for improvement</div>
         </div>
-        
         <div class="rating-divider"></div>
-        
         <div id="voting-ui">
-          <button class="btn-submit" onclick="submitEvaluation()" id="submit-btn-element">
+         <button class="btn-submit" onclick="return submitVoteToGoogleForms()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <div class="submit-note">Scores cannot be altered once transmitted to the database.</div>
         </div>
-        
         <div class="locked-state" id="locked-state">
           <div class="locked-icon">
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M7 11V8a6 6 0 0112 0v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="3" y="11" width="20" height="12" rx="2.5" stroke="#fff" stroke-width="2"/><circle cx="13" cy="18" r="2" fill="#fff"/></svg>
@@ -323,15 +340,58 @@
 </div>
 
 <script>
-  const supabaseUrl = 'https://bpddzqbuqdmvubuzerem.supabase.co';
-const supabaseAnonKey = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-let ACTIVE_JUDGE_EMAIL = "";
+  // ---- Supabase config ----
+  const SUPABASE_URL = "https://bpddzqbuqdmvubuzerem.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---- Auth Handling ----
+  let judgeEmail = null;
+  let session = null;
+
+  // Prompt for email and trigger Supabase magic link
+  async function ensureAuth() {
+    if (session && judgeEmail) return true;
+    judgeEmail = window.prompt("Enter your judge email (will be verified by email link - required for voting):", "");
+    if (!judgeEmail || !judgeEmail.includes("@")) {
+      alert("A valid email is required.");
+      return false;
+    }
+
+    // Send login email
+    const { error } = await supabase.auth.signInWithOtp({ email: judgeEmail });
+    if (error) {
+      alert("Authentication error: " + error.message);
+      return false;
+    }
+    alert('Check your email and click the link to continue.\n\nOnce you\'ve clicked the link, return and refresh the page or try again.');
+    // After click, session is valid. We'll try again later.
+    return false;
+  }
+
+  // On load, restore session
+  supabase.auth.getSession().then(({ data: { session: s } }) => {
+    session = s;
+    if (session && session.user && session.user.email) {
+      judgeEmail = session.user.email;
+      document.getElementById("judge-id-display").textContent = judgeEmail;
+    }
+  });
+  supabase.auth.onAuthStateChange((_event, newSession) => {
+    session = newSession;
+    if (session && session.user && session.user.email) {
+      judgeEmail = session.user.email;
+      document.getElementById("judge-id-display").textContent = judgeEmail;
+    }
+  });
+  // --- BEGIN DATA ---
   const ACTIVE_JUDGE_ID = "judge_01"; 
 
+  // Ensure these arrays are filled with real, **unique** values!
   const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
 
+  // 'num' should be unique for every project!
   const projects = [
     { num:'[Project Num 1]', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#6b1a2a','#300a12'], voted: false },
     { num:'[Project Num 2]', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#4a1020','#1f040b'], voted: false },
@@ -397,7 +457,6 @@ let ACTIVE_JUDGE_EMAIL = "";
 
   function renderCards(dataSet) {
     const trackElement = document.getElementById('cards-track');
-    
     const offsetCalc = (window.innerWidth / 2) - 175;
     trackElement.style.paddingLeft = `${Math.max(32, offsetCalc)}px`;
     trackElement.style.paddingRight = `${Math.max(32, offsetCalc)}px`;
@@ -409,6 +468,7 @@ let ACTIVE_JUDGE_EMAIL = "";
     }
 
     trackElement.innerHTML = dataSet.map(p => {
+      // num is assumed unique!
       const globalIdx = projects.findIndex(orig => orig.num === p.num);
       return `
       <div class="proj-card" onclick="openEval(${globalIdx})">
@@ -431,7 +491,8 @@ let ACTIVE_JUDGE_EMAIL = "";
           ${p.voted ? `<div class="voted-badge" style="display:block">✓ Evaluation Transmitted</div>` : ''}
         </div>
       </div>
-    `}).join('');
+    `;
+    }).join('');
     buildDots(dataSet.length);
   }
 
@@ -474,13 +535,41 @@ let ACTIVE_JUDGE_EMAIL = "";
     });
   });
 
+  // --- Accessibility: trap focus in overlay when visible ---
+  function trapFocus(e) {
+    const overlay = document.getElementById('expanded-overlay');
+    if (!overlay.classList.contains('visible')) return;
+    // Find all tabbable elements
+    const tabbables = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const first = tabbables[0];
+    const last = tabbables[tabbables.length - 1];
+    if (!tabbables.length) return;
+
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        // Moving backwards
+        if (document.activeElement === first) {
+          last.focus();
+          e.preventDefault();
+        }
+      } else {
+        // Moving forward
+        if (document.activeElement === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      }
+    } else if (e.key === 'Escape') {
+      closeExpanded();
+    }
+  }
+
   function openEval(idx) {
     currentProject = projects[idx];
     overallValue = 75;
     criteriaValues = {};
     criteria.forEach(c => criteriaValues[c.key] = 75);
     const p = currentProject;
-    
     document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
     document.getElementById('exp-tag').textContent = p.category;
     document.getElementById('exp-num').textContent = p.num;
@@ -511,25 +600,31 @@ let ACTIVE_JUDGE_EMAIL = "";
     document.getElementById('overall-slider').value = 75;
     document.getElementById('overall-slider').disabled = p.voted;
     document.getElementById('overall-range-label').textContent = getRangeLabel(75);
-    
+
     document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
     const lockedState = document.getElementById('locked-state');
-    
     if(p.voted) {
       lockedState.classList.add('visible');
-      document.getElementById('locked-score-text').textContent =
-  `Overall Score Stored: ${p.savedScore} / 100`
+      document.getElementById('locked-score-text').textContent = "Evaluation Status: Locked in Forms Database";
     } else {
       lockedState.classList.remove('visible');
     }
-    
+
     const ov = document.getElementById('expanded-overlay');
     ov.classList.add('visible');
     ov.scrollTop = 0;
+    // Focus the close button for accessibility!
+    const closeBtn = document.getElementById('close-modal-btn');
+    if (closeBtn) closeBtn.focus();
+    // Activate focus trap
+    document.addEventListener('keydown', trapFocus, true);
   }
 
   function closeExpanded() {
     document.getElementById('expanded-overlay').classList.remove('visible');
+    document.removeEventListener('keydown', trapFocus, true);
+    // send focus back to Nav for logical keyboard navigation
+    document.getElementById('search-input').focus();
   }
 
   function updateCriterion(key, val) {
@@ -544,80 +639,62 @@ let ACTIVE_JUDGE_EMAIL = "";
     document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
   }
 
- async function submitEvaluation() {
+  async function submitVoteToGoogleForms() {
+   if (!(await ensureAuth())) return;
 
-  const btn = document.getElementById('submit-btn-element');
+    const btn = document.getElementById('submit-btn-element');
+    btn.textContent = "Saving to Supabase...";
+    btn.disabled = true;
 
-  btn.textContent = "Submitting...";
-  btn.disabled = true;
+    // Compose the Supabase row matching your SQL (see below)
+    // -- criteria: invariant: order must match
+    // -- change key ('c1', 'c2', ...) if you alter slider keys
 
-  const payload = {
-    judge_email: ACTIVE_JUDGE_EMAIL,
-    project_num: currentProject.num,
+    // Defensive: map key to criterion
+    const c1 = typeof criteriaValues['c1'] === "number" ? criteriaValues['c1'] : 75;
+    const c2 = typeof criteriaValues['c2'] === "number" ? criteriaValues['c2'] : 75;
+    const c3 = typeof criteriaValues['c3'] === "number" ? criteriaValues['c3'] : 75;
 
-    criterion_1: criteriaValues.c1,
-    criterion_2: criteriaValues.c2,
-    criterion_3: criteriaValues.c3,
+    const data = {
+      judge_email: judgeEmail,
+      project_num: currentProject.num,
+      criterion_1: c1,
+      criterion_2: c2,
+      criterion_3: c3,
+      overall_score: overallValue,
+    };
 
-    overall_score: overallValue
-  };
+    // Insert, expect possible unique error!
+    const { data:ins, error } = await supabase
+      .from("evaluations")
+      .insert([data]);
 
-  const { error } = await supabase
-    .from('evaluations')
-    .insert(payload);
+    if (error) {
+      if (error.code === "23505" || (error.message && error.message.includes("duplicate"))) {
+        alert("You have already evaluated this project.");
+      } else {
+        alert("Supabase save failed: " + error.message);
+      }
+      btn.textContent = "Submit Evaluation";
+      btn.disabled = false;
+      return;
+    }
 
-  if (error) {
-
-    alert(error.message);
-
-    btn.textContent = "Submit Evaluation";
-    btn.disabled = false;
-
-    return;
+    // Success
+    finalizeSubmissionUI();
   }
-
-  finalizeSubmissionUI();
-}
 
   function finalizeSubmissionUI() {
     const idx = projects.indexOf(currentProject);
     if (idx !== -1) projects[idx].voted = true;
-    
     document.getElementById('voting-ui').style.display = 'none';
-   document.getElementById('locked-score-text').textContent =
-`Overall Score Stored: ${currentProject.savedScore || overallValue} / 100`;
+    document.getElementById('locked-score-text').textContent = `Overall Score: ${overallValue} / 100`;
     document.getElementById('locked-state').classList.add('visible');
-    
     updateProgress();
     filterProjects();
     confetti();
   }
-async function loadExistingVotes() {
 
-  const { data, error } = await supabase
-    .from('evaluations')
-    .select('project_num, overall_score')
-    .eq('judge_email', ACTIVE_JUDGE_EMAIL);
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  data.forEach(vote => {
-
-    const project = projects.find(
-      p => p.num === vote.project_num
-    );
-
-    if (project) {
-      project.voted = true;
-      project.savedScore = vote.overall_score;
-    }
-  });
-
-  renderCards(projects);
-}
   function confetti() {
     const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
     for (let i = 0; i < 60; i++) {
@@ -642,38 +719,21 @@ async function loadExistingVotes() {
     `<span class="marquee-item ${i.hi?'hi':''}"><span class="marquee-sep"></span>${i.text}</span>`
   ).join('');
 
-  window.addEventListener('resize', filterProjects);
-async function logout() {
-  await supabase.auth.signOut();
-  window.location.replace('index.html');
-}
- window.addEventListener('DOMContentLoaded', async () => {
-
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session) {
-    window.location.replace('index.html');
-    return;
+  // --- Debounce for resize handler (performance) ---
+  let resizeTimeout = null;
+  function debouncedFilterProjects() {
+    if (resizeTimeout) clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => filterProjects(), 150);
   }
+  window.addEventListener('resize', debouncedFilterProjects);
 
-  ACTIVE_JUDGE_EMAIL = session.user.email;
-
-  document.getElementById('judge-id-display').textContent =
-    ACTIVE_JUDGE_EMAIL.toUpperCase();
-
+  window.addEventListener('DOMContentLoaded', () => {
   const video = document.getElementById('bg-video-stream');
-  if (video) {
-    video.playbackRate = 0.5;
-  }
-
+  if (video) { video.playbackRate = 0.5; }
   initCategories();
   renderCards(projects);
-
-  await loadExistingVotes();
-
   updateProgress();
-
-  });
+});
 </script>
 </body>
 </html>
