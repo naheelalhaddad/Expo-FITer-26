@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+ 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
@@ -167,7 +168,7 @@
   </style>
 </head>
 <body>
-
+ 
 <video id="bg-video-stream" class="bg-video" autoplay loop muted playsinline>
   <source src="background.mp4" type="video/mp4" />
 </video>
@@ -511,33 +512,29 @@
     document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
   }
 
-  function submitVoteToGoogleForms() {
+  async function submitVoteToSupabase() {
     const btn = document.getElementById('submit-btn-element');
-    btn.textContent = "Transmitting to Sheets...";
+    btn.textContent = "Transmitting to Database...";
     btn.disabled = true;
 
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfp7N8N4mD-fake-id-placeholder/formResponse"; 
-    const ENTRY_JUDGE = "entry.1000001";
-    const ENTRY_PROJECT = "entry.1000002";
-    const ENTRY_SCORE = "entry.1000003";
-    
-    const formData = new URLSearchParams();
-    formData.append(ENTRY_JUDGE, ACTIVE_JUDGE_ID);
-    formData.append(ENTRY_PROJECT, currentProject.num);
-    formData.append(ENTRY_SCORE, overallValue);
-    
-    fetch(FORM_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString()
-    }).then(() => {
-      finalizeSubmissionUI();
-    }).catch(() => {
-      finalizeSubmissionUI();
-    });
-  }
+    const { data, error } = await supabase
+      .from('evaluations')
+      .insert([
+        { 
+          judge_email: window.ACTIVE_USER_EMAIL, 
+          project_num: currentProject.num, 
+          score: overallValue 
+        }
+      ]);
 
+    if (error) {
+      btn.textContent = "Transmission Failed";
+      btn.style.backgroundColor = "var(--red)";
+      console.error(error);
+    } else {
+      finalizeSubmissionUI();
+    }
+  }
   function finalizeSubmissionUI() {
     const idx = projects.indexOf(currentProject);
     if (idx !== -1) projects[idx].voted = true;
@@ -550,6 +547,26 @@
     filterProjects();
     confetti();
   }
+  async function lockPastEvaluations() {
+    const { data: pastVotes, error } = await supabase
+      .from('evaluations')
+      .select('project_num')
+      .eq('judge_email', window.ACTIVE_USER_EMAIL);
+
+    if (!error && pastVotes) {
+      pastVotes.forEach(vote => {
+        const idx = projects.findIndex(p => p.num === vote.project_num);
+        if (idx !== -1) projects[idx].voted = true;
+      });
+    }
+    
+    renderCards(projects);
+    updateProgress();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(lockPastEvaluations, 500); 
+  });
 
   function confetti() {
     const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
@@ -586,6 +603,35 @@
     renderCards(projects);
     updateProgress();
   });
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL';
+  const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+  async function lockPastEvaluations() {
+    const { data: pastVotes, error } = await supabase
+      .from('evaluations')
+      .select('project_num')
+      .eq('judge_email', window.ACTIVE_USER_EMAIL);
+
+    if (!error && pastVotes) {
+      pastVotes.forEach(vote => {
+        const idx = projects.findIndex(p => p.num === vote.project_num);
+        if (idx !== -1) projects[idx].voted = true;
+      });
+    }
+    
+    renderCards(projects);
+    updateProgress();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(lockPastEvaluations, 500); 
+  });
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
