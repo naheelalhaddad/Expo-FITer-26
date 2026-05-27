@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -275,7 +274,7 @@
         <div class="rating-divider"></div>
         
         <div id="voting-ui">
-          <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
+          <button class="btn-submit" onclick="submitVoteToGoogleForms()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -297,72 +296,45 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co'; 
-  const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const ACTIVE_JUDGE_ID = "judge_01"; 
 
-  // 1. AUTHENTICATION FIRST
-  (async function initApp() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error || !session) {
-      window.location.replace('login.html');
-      return;
-    }
+  const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
 
-    // Set globals based on session
-    window.ACTIVE_USER_EMAIL = session.user.email;
-    document.getElementById('judge-id-display').textContent = session.user.email.split('@')[0].toUpperCase();
+  const projects = [
+    { num:'[Project Num 1]', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#6b1a2a','#300a12'], voted: false },
+    { num:'[Project Num 2]', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#4a1020','#1f040b'], voted: false },
+    { num:'[Project Num 3]', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#8a2236','#400c19'], voted: false },
+    { num:'[Project Num 4]', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#5c1422','#29070e'], voted: false },
+    { num:'[Project Num 5]', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder validation tracking logic data sets]', colors:['#7a1c2e','#380914'], voted: false }
+  ];
 
-    // 2. NOW initialize UI and Load Data
-    initCategories();
-    renderCards(projects);
-    updateProgress();
-    lockPastEvaluations();
-  })();
+  const rangeLabels = [
+    { max:20,  label:'Poor — Does not meet basic requirements' },
+    { max:40,  label:'Below Average — Significant gaps in execution' },
+    { max:60,  label:'Average — Meets some requirements with notable gaps' },
+    { max:75,  label:'Good — Solid project with minor areas for improvement' },
+    { max:90,  label:'Very Good — Exceeds expectations in most areas' },
+    { max:100, label:'Excellent — Outstanding, exceptional quality' },
+  ];
 
-  // 3. VOTING LOGIC
-  async function submitVoteToSupabase() {
-    const btn = document.getElementById('submit-btn-element');
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+  const criteria = [
+    { name:'[Criterion 1]', key:'c1' },
+    { name:'[Criterion 2]', key:'c2' },
+    { name:'[Criterion 3]', key:'c3' },
+  ];
 
-    const { error } = await supabase
-      .from('evaluations')
-      .insert([{
-        judge_email:   window.ACTIVE_USER_EMAIL,
-        project_num:   currentProject.num,
-        criterion_1:   criteriaValues['c1'] || 0,
-        criterion_2:   criteriaValues['c2'] || 0,
-        criterion_3:   criteriaValues['c3'] || 0,
-        overall_score: overallValue
-      }]);
+  let currentProject = null;
+  let overallValue = 75;
+  let criteriaValues = {};
+  let activeCategory = 'All';
 
-    if (error) {
-      if (error.code === '23505') alert("You already evaluated this project!");
-      else alert("Error saving vote: " + error.message);
-      btn.disabled = false;
-      btn.textContent = 'Submit Evaluation';
-    } else {
-      finalizeSubmissionUI();
-    }
+  function getRangeLabel(val) {
+    return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label;
   }
 
-  // 4. LOCKING LOGIC
-  async function lockPastEvaluations() {
-    const { data, error } = await supabase
-      .from('evaluations')
-      .select('project_num')
-      .eq('judge_email', window.ACTIVE_USER_EMAIL);
-
-    if (!error && data) {
-      data.forEach(row => {
-        const idx = projects.findIndex(p => p.num === row.project_num);
-        if (idx !== -1) projects[idx].voted = true;
-      });
-    }
-    filterProjects();
-    updateProgress();
+  function updateProgress() {
+    const voted = projects.filter(p => p.voted).length;
+    document.getElementById('nav-progress').textContent = `${voted} / ${projects.length} EVALUATED`;
   }
 
   function initCategories() {
@@ -539,34 +511,32 @@
     document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
   }
 
- async function submitVoteToSupabase() {
-  const btn = document.getElementById('submit-btn-element');
-  btn.disabled = true;
-  btn.textContent = 'Saving to Database...';
+  function submitVoteToGoogleForms() {
+    const btn = document.getElementById('submit-btn-element');
+    btn.textContent = "Transmitting to Sheets...";
+    btn.disabled = true;
 
-  const { error } = await supabase
-    .from('evaluations')
-    .insert([{
-      judge_email:   window.ACTIVE_USER_EMAIL,
-      project_num:   currentProject.num,
-      criterion_1:   criteriaValues['c1'] || 0,
-      criterion_2:   criteriaValues['c2'] || 0,
-      criterion_3:   criteriaValues['c3'] || 0,
-      overall_score: overallValue
-    }]);
-
-  if (error) {
-    if (error.code === '23505') {
-       alert("You already evaluated this project!");
-    } else {
-       alert("Error saving vote: " + error.message);
-    }
-    btn.disabled = false;
-    btn.textContent = 'Submit Evaluation';
-  } else {
-    finalizeSubmissionUI();
+    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfp7N8N4mD-fake-id-placeholder/formResponse"; 
+    const ENTRY_JUDGE = "entry.1000001";
+    const ENTRY_PROJECT = "entry.1000002";
+    const ENTRY_SCORE = "entry.1000003";
+    
+    const formData = new URLSearchParams();
+    formData.append(ENTRY_JUDGE, ACTIVE_JUDGE_ID);
+    formData.append(ENTRY_PROJECT, currentProject.num);
+    formData.append(ENTRY_SCORE, overallValue);
+    
+    fetch(FORM_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString()
+    }).then(() => {
+      finalizeSubmissionUI();
+    }).catch(() => {
+      finalizeSubmissionUI();
+    });
   }
-}
 
   function finalizeSubmissionUI() {
     const idx = projects.indexOf(currentProject);
