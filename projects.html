@@ -274,7 +274,7 @@
         <div class="rating-divider"></div>
         
         <div id="voting-ui">
-          <button class="btn-submit" onclick="submitVoteToGoogleForms()" id="submit-btn-element">
+         <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -511,31 +511,72 @@
     document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
   }
 
-  function submitVoteToGoogleForms() {
-    const btn = document.getElementById('submit-btn-element');
-    btn.textContent = "Transmitting to Sheets...";
-    btn.disabled = true;
+ // 1. SUPABASE CONNECTION (Put this at the very top of your <script>)
+  const supabase = window.supabase.createClient(
+    'https://bpddzqbuqdmvubuzerem.supabase.co', 
+    'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm'
+  );
 
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfp7N8N4mD-fake-id-placeholder/formResponse"; 
-    const ENTRY_JUDGE = "entry.1000001";
-    const ENTRY_PROJECT = "entry.1000002";
-    const ENTRY_SCORE = "entry.1000003";
+  // 2. AUTH GUARD (This checks if they are logged in)
+  (async function checkAuth() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+      window.location.replace('login.html');
+      return;
+    }
+    // Set identity globals
+    window.ACTIVE_USER_EMAIL = session.user.email;
+    document.getElementById('judge-id-display').textContent = session.user.email.split('@')[0].toUpperCase();
     
-    const formData = new URLSearchParams();
-    formData.append(ENTRY_JUDGE, ACTIVE_JUDGE_ID);
-    formData.append(ENTRY_PROJECT, currentProject.num);
-    formData.append(ENTRY_SCORE, overallValue);
-    
-    fetch(FORM_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString()
-    }).then(() => {
+    // Now load everything else
+    initCategories();
+    renderCards(projects);
+    updateProgress();
+    lockPastEvaluations();
+  })();
+
+  // 3. VOTING (This saves to Supabase)
+  async function submitVoteToSupabase() {
+    const btn = document.getElementById('submit-btn-element');
+    btn.disabled = true;
+    btn.textContent = 'Saving to Database...';
+
+    const { error } = await supabase
+      .from('evaluations')
+      .insert([{
+        judge_email:   window.ACTIVE_USER_EMAIL,
+        project_num:   currentProject.num,
+        criterion_1:   criteriaValues['c1'] || 75,
+        criterion_2:   criteriaValues['c2'] || 75,
+        criterion_3:   criteriaValues['c3'] || 75,
+        overall_score: overallValue
+      }]);
+
+    if (error) {
+      if (error.code === '23505') alert("You already evaluated this project!");
+      else alert("Error: " + error.message);
+      btn.disabled = false;
+      btn.textContent = 'Submit Evaluation';
+    } else {
       finalizeSubmissionUI();
-    }).catch(() => {
-      finalizeSubmissionUI();
-    });
+    }
+  }
+
+  // 4. LOCKING (This hides the button if they already voted)
+  async function lockPastEvaluations() {
+    const { data, error } = await supabase
+      .from('evaluations')
+      .select('project_num')
+      .eq('judge_email', window.ACTIVE_USER_EMAIL);
+
+    if (!error && data) {
+      data.forEach(row => {
+        const idx = projects.findIndex(p => p.num === row.project_num);
+        if (idx !== -1) projects[idx].voted = true;
+      });
+      filterProjects();
+      updateProgress();
+    }
   }
 
   function finalizeSubmissionUI() {
