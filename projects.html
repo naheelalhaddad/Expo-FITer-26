@@ -344,6 +344,7 @@
   // ---- Supabase config ----
   const SUPABASE_URL = "https://bpddzqbuqdmvubuzerem.supabase.co";
   const SUPABASE_KEY = "sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
   // ---- Auth Handling ----
@@ -646,9 +647,6 @@
     btn.textContent = "Saving to Supabase...";
     btn.disabled = true;
 
-    // Compose the Supabase row matching your SQL (see below)
-    // -- criteria: invariant: order must match
-    // -- change key ('c1', 'c2', ...) if you alter slider keys
 
     // Defensive: map key to criterion
     const c1 = typeof criteriaValues['c1'] === "number" ? criteriaValues['c1'] : 75;
