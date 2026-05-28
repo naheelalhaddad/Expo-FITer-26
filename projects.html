@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></sinitappcript>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -18,8 +18,8 @@
       --sub: rgba(255,255,255,.45); 
       --muted: rgba(255,255,255,.2);
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; /* overflow: hidden; Removed to allow scrolling*/ }
-    /* --- Cross-browser range input styling --- */
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+    
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 24px; height: 24px; border-radius: 50%; background: #fff;
@@ -38,7 +38,6 @@
       box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5);
       cursor: pointer; transition: transform .15s;
     }
-    /* Track styles for range */
     input[type=range] {
       -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px;
       background: rgba(255,255,255,.1); outline: none; cursor: pointer;
@@ -48,9 +47,9 @@
     input[type=range]::-ms-fill-lower,
     input[type=range]::-ms-fill-upper { background: rgba(255,255,255,.1);}
     input[type=range]:focus { outline: none; }
-    /* Remove focus outline in Firefox */
     input[type=range]::-moz-focus-outer { border: 0; }
-        .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
+    
+    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
     .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.35) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
     .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
     
@@ -62,7 +61,6 @@
     .brand-container { height: 90px; display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
     .brand-container img { height: 100%; width: auto; max-height: 70px; object-fit: contain; }
     
-    /* PARTNER LOGOS: Scaled transparent wrapper */
     .partner-container { height: 56px; display: flex; align-items: center; gap: 20px; border-left: 1px solid var(--border); padding-left: 24px; }
     .partner-container img { height: 100%; width: auto; max-height: 56px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
     
@@ -160,10 +158,6 @@
     .range-hint { display: flex; justify-content: space-between; margin-top: 6px; }
     .range-hint span { font-size: 11px; color: var(--sub); font-family: 'IBM Plex Mono', monospace; }
 
-    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); outline: none; cursor: pointer; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(107,26,42,.4), 0 2px 10px rgba(0,0,0,.5); cursor: pointer; transition: transform .15s; }
-    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-
     .rating-divider { height: 1px; background: var(--border); }
     .overall-wrap { display: flex; flex-direction: column; gap: 12px; }
     .overall-display { text-align: center; padding: 1.5rem 0 .5rem; }
@@ -195,26 +189,8 @@
       .controls-row { padding: 1rem; align-items: center; }
       .search-bar { max-width: 100%; }
     }
-    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
-    .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.35) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
-    .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
-
-    /* ...all your styles remain unchanged below... */
-    .page { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
-    /* [Rest of style unchanged. To conserve space, omitted, but keep all your other rules.]*/
-
-    /* --- Confetti styles (added for completeness so confetti is visible) --- */
-    .confetti-piece {
-      position: fixed;
-      z-index: 1000;
-      border-radius: 50%;
-      opacity: .85;
-      animation: confetti-fall cubic-bezier(.33,.66,.66,1) forwards;
-    }
-    @keyframes confetti-fall {
-      0% { transform: translateY(0) scale(1);}
-      100% { transform: translateY(400px) scale(.5);}
-    }
+    .confetti-piece { position: fixed; z-index: 1000; border-radius: 50%; opacity: .85; animation: confetti-fall cubic-bezier(.33,.66,.66,1) forwards; }
+    @keyframes confetti-fall { 0% { transform: translateY(0) scale(1);} 100% { transform: translateY(400px) scale(.5);} }
   </style>
 </head>
 <body>
@@ -257,14 +233,12 @@
   </div>
 </div>
 
-<!-- ARIA & focus for overlay/modal dialog! -->
 <div class="expanded-overlay" id="expanded-overlay" role="dialog" aria-modal="true" aria-labelledby="exp-name" tabindex="-1">
   <div class="expanded-inner">
     <button class="back-btn" onclick="closeExpanded()" id="close-modal-btn">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 7H4M6.5 4L4 7l2.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Back to projects
     </button>
-    <!-- [Rest of overlay HTML unchanged] -->
     <div class="exp-hero">
       <div class="exp-hero-bg" id="exp-hero-bg"></div>
       <div class="exp-hero-overlay"></div>
@@ -319,7 +293,7 @@
         </div>
         <div class="rating-divider"></div>
         <div id="voting-ui">
-        <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
+          <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -351,14 +325,13 @@ let activeCategory = 'All';
 
 const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
 const projects = [
-  { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#6b1a2a','#300a12'], voted: false },
-  { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#4a1020','#1f040b'], voted: false },
-  { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#8a2236','#400c19'], voted: false },
-  { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#5c1422','#29070e'], voted: false },
-  { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#7a1c2e','#380914'], voted: false }
+  { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#6b1a2a','#300a12'], voted: false },
+  { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#4a1020','#1f040b'], voted: false },
+  { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#8a2236','#400c19'], voted: false },
+  { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#5c1422','#29070e'], voted: false },
+  { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#7a1c2e','#380914'], voted: false }
 ];
 
-const criteria = [{ name:'[Criterion 1]', key:'c1' }, { name:'[Criterion 2]', key:'c2' }, { name:'[Criterion 3]', key:'c3' }];
 const rangeLabels = [
   { max:20,  label:'Poor — Does not meet basic requirements' },
   { max:40,  label:'Below Average — Significant gaps in execution' },
@@ -366,6 +339,12 @@ const rangeLabels = [
   { max:75,  label:'Good — Solid project with minor areas for improvement' },
   { max:90,  label:'Very Good — Exceeds expectations in most areas' },
   { max:100, label:'Excellent — Outstanding, exceptional quality' }
+];
+
+const criteria = [
+  { name:'[Criterion 1]', key:'c1' },
+  { name:'[Criterion 2]', key:'c2' },
+  { name:'[Criterion 3]', key:'c3' }
 ];
 
 (async function initApp() {
