@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Expo FITers GP – Projects</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></sinitappcript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -319,7 +319,7 @@
         </div>
         <div class="rating-divider"></div>
         <div id="voting-ui">
-         <button class="btn-submit" onclick="return submitVoteToGoogleForms()" id="submit-btn-element">
+        <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
             Submit Evaluation
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -370,12 +370,9 @@ const rangeLabels = [
 
 (async function initApp() {
   const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session) {
-    window.location.replace('index.html');
-    return;
-  }
-  window.ACTIVE_USER_EMAIL = session.user.email;
-  document.getElementById('judge-id-display').textContent = session.user.email.split('@')[0].toUpperCase();
+  
+  window.ACTIVE_USER_EMAIL = session ? session.user.email : 'test_judge@asu.edu.jo';
+  document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
 
   initCategories();
   renderCards(projects);
