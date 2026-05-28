@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentProject = null;
 let overallValue = 75;
@@ -9,14 +9,13 @@ let activeCategory = 'All';
 
 const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
 const projects = [
-  { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#6b1a2a','#300a12'], voted: false },
-  { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#4a1020','#1f040b'], voted: false },
-  { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#8a2236','#400c19'], voted: false },
-  { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#5c1422','#29070e'], voted: false },
-  { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract]', colors:['#7a1c2e','#380914'], voted: false }
+  { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#6b1a2a','#300a12'], voted: false },
+  { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#4a1020','#1f040b'], voted: false },
+  { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#8a2236','#400c19'], voted: false },
+  { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#5c1422','#29070e'], voted: false },
+  { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#7a1c2e','#380914'], voted: false }
 ];
 
-const criteria = [{ name:'[Criterion 1]', key:'c1' }, { name:'[Criterion 2]', key:'c2' }, { name:'[Criterion 3]', key:'c3' }];
 const rangeLabels = [
   { max:20,  label:'Poor — Does not meet basic requirements' },
   { max:40,  label:'Below Average — Significant gaps in execution' },
@@ -26,8 +25,14 @@ const rangeLabels = [
   { max:100, label:'Excellent — Outstanding, exceptional quality' }
 ];
 
+const criteria = [
+  { name:'[Criterion 1]', key:'c1' },
+  { name:'[Criterion 2]', key:'c2' },
+  { name:'[Criterion 3]', key:'c3' }
+];
+
 (async function initApp() {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
   
   window.ACTIVE_USER_EMAIL = session ? session.user.email : 'test_judge@asu.edu.jo';
   document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
@@ -46,7 +51,7 @@ async function submitVoteToSupabase() {
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
-  const { error } = await supabase.from('evaluations').insert([{
+  const { error } = await supabaseClient.from('evaluations').insert([{
       judge_email:   window.ACTIVE_USER_EMAIL,
       project_num:   currentProject.num,
       criterion_1:   criteriaValues['c1'] || 75,
@@ -66,7 +71,7 @@ async function submitVoteToSupabase() {
 }
 
 async function lockPastEvaluations() {
-  const { data, error } = await supabase.from('evaluations').select('project_num').eq('judge_email', window.ACTIVE_USER_EMAIL);
+  const { data, error } = await supabaseClient.from('evaluations').select('project_num').eq('judge_email', window.ACTIVE_USER_EMAIL);
   if (!error && data) {
     data.forEach(row => {
       const idx = projects.findIndex(p => p.num === row.project_num);
