@@ -153,13 +153,22 @@ async function initializeDashboard() {
   generateTabs();
 
   const { data, error } = await supabaseClient.from('evaluations').select('*');
-  if (error) {
-    console.error("Database fetch failed", error);
-    return;
-  }
+  if (error) return;
   
   rawEvaluations = data;
   processAndRender();
+
+  supabaseClient
+    .channel('evaluations-channel')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'evaluations' },
+      (payload) => {
+        rawEvaluations.push(payload.new);
+        processAndRender();
+      }
+    )
+    .subscribe();
 }
 
 function generateTabs() {
