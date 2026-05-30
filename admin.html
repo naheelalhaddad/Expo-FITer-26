@@ -3,196 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <title>Expo FITers GP – Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --maroon: #6b1a2a;
-      --maroon-dark: #4a1020;
-      --bg-color: #fcfcfc;
-      --text-main: #2b2b2b;
-      --border-color: #e0e0e0;
+      --maroon: #6b1a2a; 
+      --maroon-mid: #4a1020; 
+      --red: #c31e2d;
+      --bg: #0a0608; 
+      --border: rgba(255,255,255,.08); 
+      --text: #ffffff;
+      --sub: rgba(255,255,255,.45); 
+      --muted: rgba(255,255,255,.2);
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 2rem;
-    }
-
-    .dashboard-container {
-      display: grid;
-      grid-template-columns: 2.5fr 1fr;
-      gap: 2rem;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .main-panel {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-
-    .tabs {
-      display: flex;
-      border-bottom: 2px solid var(--border-color);
-      background: #fafafa;
-    }
-
-    .tab {
-      padding: 1rem 1.5rem;
-      font-weight: 600;
-      color: #666;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      letter-spacing: 0.05em;
-    }
-
-    .tab.active {
-      color: var(--maroon);
-      border-bottom-color: var(--maroon);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 1rem 1.5rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    th {
-      font-weight: 600;
-      color: var(--text-main);
-      font-size: 0.9rem;
-    }
-
-    td {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .rank { font-weight: 800; }
-    .avatar-placeholder {
-      display: inline-block;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--maroon);
-      color: #fff;
-      text-align: center;
-      line-height: 32px;
-      font-size: 0.8rem;
-      margin-right: 10px;
-      vertical-align: middle;
-    }
-
-    .side-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .champion-card {
-      background: var(--maroon);
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 2rem;
-      text-align: center;
-      box-shadow: 0 8px 25px rgba(107,26,42,0.3);
-    }
-
-    .champion-header {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 1rem;
-      font-weight: 600;
-      opacity: 0.9;
-    }
-
-    .champion-badge {
-      width: 120px;
-      height: 120px;
-      background: #ffffff;
-      color: var(--maroon);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      font-weight: 800;
-      margin: 0 auto 1.5rem auto;
-      border: 4px solid var(--maroon-dark);
-    }
-
-    .champion-name {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 0.5rem;
-    }
-
-    .runner-ups {
-      margin-top: 1.5rem;
-      text-align: left;
-      font-size: 0.9rem;
-      background: rgba(0,0,0,0.15);
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
-    .runner-up-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-    }
+    
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+    
+    .bg-video { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; filter: blur(10px); opacity: 0.65; pointer-events: none; transform: scale(1.05); }
+    .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(107,26,42,.35) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(195,30,45,.15) 0%, transparent 60%); pointer-events: none; }
+    .grid-overlay { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
+    
+    .page { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
+    
+    .nav { flex-shrink: 0; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(10,6,8,0.4); backdrop-filter: blur(8px); }
+    .nav-left { display: flex; gap: 24px; align-items: center; }
+    .brand-container { height: 70px; display: flex; align-items: center; background: #ffffff; padding: 8px 20px; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+    .brand-container img { height: 100%; width: auto; max-height: 54px; object-fit: contain; }
+    .partner-container { height: 48px; display: flex; align-items: center; gap: 20px; border-left: 1px solid var(--border); padding-left: 24px; }
+    .partner-container img { height: 100%; width: auto; max-height: 48px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+    .nav-right { display: flex; align-items: center; gap: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+    
+    .dashboard-container { flex: 1; display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1600px; margin: 0 auto; width: 100%; overflow: hidden; }
+    
+    .main-panel { background: rgba(10,6,8,0.6); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+    
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { padding: 1.25rem 2rem; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 12px; color: var(--sub); cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.2s; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .tab.active { color: #fff; border-bottom-color: var(--red); background: rgba(107,26,42,0.2); }
+    
+    .table-container { flex: 1; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 1.25rem 2rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); position: sticky; top: 0; background: rgba(10,6,8,0.95); z-index: 10; }
+    td { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); }
+    
+    .rank { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--sub); }
+    .avatar-placeholder { display: inline-block; width: 28px; height: 28px; border-radius: 50%; background: var(--maroon); color: #fff; text-align: center; line-height: 28px; font-size: 11px; font-weight: 600; margin-right: 12px; font-family: 'IBM Plex Mono', monospace; }
+    .score-cell { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
+    
+    .side-panel { display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
+    
+    .champion-card { background: linear-gradient(135deg, rgba(107,26,42,0.8) 0%, rgba(74,16,32,0.9) 100%); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+    .champion-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%); }
+    
+    .champion-header { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.6); margin-bottom: 1.5rem; }
+    
+    .champion-badge { width: 100px; height: 100px; background: #fff; color: var(--maroon); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 3.5rem; font-weight: 900; margin: 0 auto 1.5rem auto; box-shadow: 0 0 0 6px rgba(255,255,255,0.1); position: relative; z-index: 2; }
+    
+    .champion-name { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem; position: relative; z-index: 2; }
+    .champion-project { font-size: 13px; color: rgba(255,255,255,0.7); position: relative; z-index: 2; margin-bottom: 2rem; }
+    
+    .runner-ups { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 12px; position: relative; z-index: 2; text-align: left; }
+    .runner-up-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+    .runner-up-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .runner-up-rank { font-family: 'IBM Plex Mono', monospace; color: rgba(255,255,255,0.5); font-size: 11px; margin-right: 12px; }
+    .runner-up-score { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #fff; }
 
   </style>
 </head>
 <body>
 
-<div class="dashboard-container">
-  <div class="main-panel">
-    <div class="tabs">
-      <div class="tab active">Overall</div>
-      <div class="tab">Innovation</div>
-      <div class="tab">Technology</div>
+<video id="bg-video-stream" class="bg-video" autoplay loop muted playsinline>
+  <source src="background.mp4" type="video/mp4" />
+</video>
+<div class="bg-layer"></div>
+<div class="grid-overlay"></div>
+
+<div class="page">
+  <div class="nav">
+    <div class="nav-left">
+      <div class="brand-container">
+        <img src="Expo_FITers_GP.svg" alt="Expo FITers GP" />
+      </div>
+      <div class="partner-container">
+        <img src="ASU_logo_white.png" alt="ASU" />
+        <img src="FITer_white_logo.png" alt="FIT" />
+      </div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Lead Member</th>
-          <th>Project Title</th>
-          <th>Category</th>
-          <th>Total Score</th>
-        </tr>
-      </thead>
-      <tbody id="leaderboard-body">
-      </tbody>
-    </table>
+    <div class="nav-right">
+      ADMIN_PANEL
+    </div>
   </div>
 
-  <div class="side-panel">
-    <div class="champion-card">
-      <div class="champion-header">Overall Ranking<br>Grand Champion</div>
-      <div class="champion-badge">#1</div>
-      <div class="champion-name" id="champ-name">-</div>
-      <div style="opacity: 0.8;" id="champ-project">-</div>
-      
-      <div class="runner-ups" id="runner-ups-list">
+  <div class="dashboard-container">
+    <div class="main-panel">
+      <div class="tabs" id="category-tabs"></div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Lead Member</th>
+              <th>Project Title</th>
+              <th>Category</th>
+              <th>Final Score</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="champion-card">
+        <div class="champion-header" id="champion-category-label">Overall Ranking<br>Grand Champion</div>
+        <div class="champion-badge">#1</div>
+        <div class="champion-name" id="champ-name">Awaiting Data</div>
+        <div class="champion-project" id="champ-project">...</div>
+        <div class="runner-ups" id="runner-ups-list"></div>
       </div>
     </div>
   </div>
@@ -204,36 +136,89 @@ const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const projects = [
-  { num:'P-001', name:'Quantum Battery', category:'Technology', members:['James Tanaka'] },
-  { num:'P-002', name:'Urban Micro-Grids', category:'Innovation', members:['Fatima Khan'] },
-  { num:'P-003', name:'Denstum Battery', category:'Technology', members:['Narvs Doraham'] },
-  { num:'P-004', name:'Urban Milmur', category:'Innovation', members:['Liam O\'Connor'] },
-  { num:'P-005', name:'Nano-Battery', category:'Technology', members:['Mara Chen'] }
+  { num:'P-001', name:'Quantum Battery', category:'Technology', supervisor:'Dr. Smith', members:['James Tanaka', 'Alice'], colors:['#6b1a2a','#300a12'] },
+  { num:'P-002', name:'Urban Micro-Grids', category:'Innovation', supervisor:'Dr. Jones', members:['Fatima Khan', 'Bob'], colors:['#4a1020','#1f040b'] },
+  { num:'P-003', name:'Denstum Battery', category:'Technology', supervisor:'Dr. Doe', members:['Narvs Doraham'], colors:['#8a2236','#400c19'] },
+  { num:'P-004', name:'Urban Milmur', category:'Innovation', supervisor:'Dr. Ray', members:['Liam O\'Connor'], colors:['#5c1422','#29070e'] },
+  { num:'P-005', name:'Nano-Battery', category:'Technology', supervisor:'Dr. Lee', members:['Mara Chen'], colors:['#7a1c2e','#380914'] }
 ];
 
-async function initializeDashboard() {
-  const { data, error } = await supabaseClient.from('evaluations').select('*');
-  
-  if (error) return;
+let rawEvaluations = [];
+let currentCategory = 'Overall';
 
-  const scoreMap = {};
+async function initializeDashboard() {
+  const video = document.getElementById('bg-video-stream');
+  if (video) video.playbackRate = 0.5;
+
+  generateTabs();
+
+  const { data, error } = await supabaseClient.from('evaluations').select('*');
+  if (error) {
+    console.error("Database fetch failed", error);
+    return;
+  }
   
-  data.forEach(record => {
-    if (!scoreMap[record.project_num]) {
-      scoreMap[record.project_num] = 0;
+  rawEvaluations = data;
+  processAndRender();
+}
+
+function generateTabs() {
+  const tabsContainer = document.getElementById('category-tabs');
+  const uniqueCategories = [...new Set(projects.map(p => p.category))];
+  const allTabs = ['Overall', ...uniqueCategories];
+  
+  tabsContainer.innerHTML = allTabs.map(cat => 
+    `<div class="tab ${cat === 'Overall' ? 'active' : ''}" onclick="setTab('${cat}', this)">${cat}</div>`
+  ).join('');
+}
+
+function setTab(category, element) {
+  currentCategory = category;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  element.classList.add('active');
+  
+  const label = document.getElementById('champion-category-label');
+  label.innerHTML = category === 'Overall' ? 'Overall Ranking<br>Grand Champion' : `${category} Ranking<br>Category Leader`;
+
+  processAndRender();
+}
+
+function processAndRender() {
+  const projectStats = {};
+  
+  rawEvaluations.forEach(record => {
+    const c1 = record.criterion_1 || 0;
+    const c2 = record.criterion_2 || 0;
+    const c3 = record.criterion_3 || 0;
+    const overall = record.overall_score || 0;
+
+    const criteriaAverage = (c1 + c2 + c3) / 3;
+    const evaluationFinalScore = (criteriaAverage + overall) / 2;
+
+    if (!projectStats[record.project_num]) {
+      projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
     }
-    scoreMap[record.project_num] += record.overall_score;
+    
+    projectStats[record.project_num].totalScore += evaluationFinalScore;
+    projectStats[record.project_num].voteCount += 1;
   });
 
-  const leaderboardData = projects.map(project => {
+  let leaderboardData = projects.map(project => {
+    const stats = projectStats[project.num];
+    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
+
     return {
       num: project.num,
       name: project.name,
       category: project.category,
-      lead: project.members[0],
-      score: scoreMap[project.num] || 0
+      lead: project.members[0] || 'Unknown',
+      score: Number(finalScore.toFixed(2))
     };
   });
+
+  if (currentCategory !== 'Overall') {
+    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
+  }
 
   leaderboardData.sort((a, b) => b.score - a.score);
 
@@ -244,35 +229,50 @@ async function initializeDashboard() {
 function renderTable(data) {
   const tbody = document.getElementById('leaderboard-body');
   
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:3rem;">No projects found for this category.</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = data.map((item, index) => {
     const initial = item.lead.charAt(0).toUpperCase();
     return `
       <tr>
-        <td class="rank">${index + 1}</td>
+        <td class="rank">#${index + 1}</td>
         <td><span class="avatar-placeholder">${initial}</span> ${item.lead}</td>
         <td>${item.name}</td>
         <td>${item.category}</td>
-        <td>${item.score}</td>
+        <td class="score-cell">${item.score}</td>
       </tr>
     `;
   }).join('');
 }
 
 function renderChampionCard(data) {
-  if (data.length === 0) return;
+  const champName = document.getElementById('champ-name');
+  const champProject = document.getElementById('champ-project');
+  const runnerUpsContainer = document.getElementById('runner-ups-list');
+
+  if (data.length === 0) {
+    champName.textContent = "N/A";
+    champProject.textContent = "No data";
+    runnerUpsContainer.innerHTML = "";
+    return;
+  }
 
   const champion = data[0];
-  document.getElementById('champ-name').textContent = champion.lead;
-  document.getElementById('champ-project').textContent = champion.name;
+  champName.textContent = champion.lead;
+  champProject.textContent = champion.name;
 
-  const runnerUpsContainer = document.getElementById('runner-ups-list');
   const runnerUps = data.slice(1, 4);
-  
   runnerUpsContainer.innerHTML = runnerUps.map((item, index) => {
     return `
       <div class="runner-up-item">
-        <span>#${index + 2} ${item.lead}</span>
-        <span>${item.score}</span>
+        <div>
+          <span class="runner-up-rank">#${index + 2}</span>
+          <span style="color:rgba(255,255,255,0.85);">${item.lead}</span>
+        </div>
+        <span class="runner-up-score">${item.score}</span>
       </div>
     `;
   }).join('');
