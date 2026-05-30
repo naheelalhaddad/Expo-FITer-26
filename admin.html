@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --maroon: #6b1a2a;
+      --maroon-dark: #4a1020;
+      --bg-color: #fcfcfc;
+      --text-main: #2b2b2b;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 2rem;
+    }
+
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 2.5fr 1fr;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .main-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border-color);
+      background: #fafafa;
+    }
+
+    .tab {
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    .tab.active {
+      color: var(--maroon);
+      border-bottom-color: var(--maroon);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 1rem 1.5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-main);
+      font-size: 0.9rem;
+    }
+
+    td {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .rank { font-weight: 800; }
+    .avatar-placeholder {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--maroon);
+      color: #fff;
+      text-align: center;
+      line-height: 32px;
+      font-size: 0.8rem;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .champion-card {
+      background: var(--maroon);
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(107,26,42,0.3);
+    }
+
+    .champion-header {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .champion-badge {
+      width: 120px;
+      height: 120px;
+      background: #ffffff;
+      color: var(--maroon);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 800;
+      margin: 0 auto 1.5rem auto;
+      border: 4px solid var(--maroon-dark);
+    }
+
+    .champion-name {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .runner-ups {
+      margin-top: 1.5rem;
+      text-align: left;
+      font-size: 0.9rem;
+      background: rgba(0,0,0,0.15);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    .runner-up-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+  <div class="main-panel">
+    <div class="tabs">
+      <div class="tab active">Overall</div>
+      <div class="tab">Innovation</div>
+      <div class="tab">Technology</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Lead Member</th>
+          <th>Project Title</th>
+          <th>Category</th>
+          <th>Total Score</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+      </tbody>
+    </table>
+  </div>
+
+  <div class="side-panel">
+    <div class="champion-card">
+      <div class="champion-header">Overall Ranking<br>Grand Champion</div>
+      <div class="champion-badge">#1</div>
+      <div class="champion-name" id="champ-name">-</div>
+      <div style="opacity: 0.8;" id="champ-project">-</div>
+      
+      <div class="runner-ups" id="runner-ups-list">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const projects = [
+  { num:'P-001', name:'Quantum Battery', category:'Technology', members:['James Tanaka'] },
+  { num:'P-002', name:'Urban Micro-Grids', category:'Innovation', members:['Fatima Khan'] },
+  { num:'P-003', name:'Denstum Battery', category:'Technology', members:['Narvs Doraham'] },
+  { num:'P-004', name:'Urban Milmur', category:'Innovation', members:['Liam O\'Connor'] },
+  { num:'P-005', name:'Nano-Battery', category:'Technology', members:['Mara Chen'] }
+];
+
+async function initializeDashboard() {
+  const { data, error } = await supabaseClient.from('evaluations').select('*');
+  
+  if (error) return;
+
+  const scoreMap = {};
+  
+  data.forEach(record => {
+    if (!scoreMap[record.project_num]) {
+      scoreMap[record.project_num] = 0;
+    }
+    scoreMap[record.project_num] += record.overall_score;
+  });
+
+  const leaderboardData = projects.map(project => {
+    return {
+      num: project.num,
+      name: project.name,
+      category: project.category,
+      lead: project.members[0],
+      score: scoreMap[project.num] || 0
+    };
+  });
+
+  leaderboardData.sort((a, b) => b.score - a.score);
+
+  renderTable(leaderboardData);
+  renderChampionCard(leaderboardData);
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('leaderboard-body');
+  
+  tbody.innerHTML = data.map((item, index) => {
+    const initial = item.lead.charAt(0).toUpperCase();
+    return `
+      <tr>
+        <td class="rank">${index + 1}</td>
+        <td><span class="avatar-placeholder">${initial}</span> ${item.lead}</td>
+        <td>${item.name}</td>
+        <td>${item.category}</td>
+        <td>${item.score}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderChampionCard(data) {
+  if (data.length === 0) return;
+
+  const champion = data[0];
+  document.getElementById('champ-name').textContent = champion.lead;
+  document.getElementById('champ-project').textContent = champion.name;
+
+  const runnerUpsContainer = document.getElementById('runner-ups-list');
+  const runnerUps = data.slice(1, 4);
+  
+  runnerUpsContainer.innerHTML = runnerUps.map((item, index) => {
+    return `
+      <div class="runner-up-item">
+        <span>#${index + 2} ${item.lead}</span>
+        <span>${item.score}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+window.addEventListener('DOMContentLoaded', initializeDashboard);
+</script>
+</body>
+</html>
