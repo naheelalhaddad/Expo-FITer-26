@@ -20,22 +20,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   generateTabs();
 
   const { data, error } = await supabaseClient.from('evaluations').select('*');
-  if (error) {
-    console.error("Database fetch failed", error);
-    return;
+  if (!error) {
+    rawEvaluations = data;
+    processAndRender();
   }
-  
-  rawEvaluations = data;
-  processAndRender();
 
   supabaseClient
     .channel('evaluations-channel')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'evaluations' },
-      (payload) => {
-        rawEvaluations.push(payload.new);
-        processAndRender();
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
+        if (Object.keys(payload.new).length > 0) {
+          rawEvaluations.push(payload.new);
+          processAndRender();
+        }
       }
     )
     .subscribe();
@@ -59,7 +55,6 @@ window.setTab = function(category, element) {
   
   const label = document.getElementById('champion-category-label');
   if(label) label.innerHTML = category === 'Overall' ? 'Overall Ranking<br>Grand Champion' : `${category} Ranking<br>Category Leader`;
-
   processAndRender();
 };
 
@@ -72,13 +67,9 @@ function processAndRender() {
     const c3 = record.criterion_3 || 0;
     const overall = record.overall_score || 0;
 
-    const criteriaAverage = (c1 + c2 + c3) / 3;
-    const evaluationFinalScore = (criteriaAverage + overall) / 2;
+    const evaluationFinalScore = (((c1 + c2 + c3) / 3) + overall) / 2;
 
-    if (!projectStats[record.project_num]) {
-      projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
-    }
-    
+    if (!projectStats[record.project_num]) projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
     projectStats[record.project_num].totalScore += evaluationFinalScore;
     projectStats[record.project_num].voteCount += 1;
   });
@@ -86,20 +77,10 @@ function processAndRender() {
   let leaderboardData = projects.map(project => {
     const stats = projectStats[project.num];
     const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
-
-    return {
-      num: project.num,
-      name: project.name,
-      category: project.category,
-      lead: project.members[0] || 'Unknown',
-      score: Number(finalScore.toFixed(2))
-    };
+    return { num: project.num, name: project.name, category: project.category, lead: project.members[0] || 'Unknown', score: Number(finalScore.toFixed(2)) };
   });
 
-  if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
-  }
-
+  if (currentCategory !== 'Overall') leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
   leaderboardData.sort((a, b) => b.score - a.score);
 
   renderTable(leaderboardData);
@@ -109,23 +90,16 @@ function processAndRender() {
 function renderTable(data) {
   const tbody = document.getElementById('leaderboard-body');
   if (!tbody) return;
-  
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:3rem;">No projects found for this category.</td></tr>`;
-    return;
-  }
+  if (data.length === 0) return tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:3rem;">No projects found for this category.</td></tr>`;
 
   tbody.innerHTML = data.map((item, index) => {
-    const initial = item.lead.charAt(0).toUpperCase();
-    return `
-      <tr>
-        <td class="rank">#${index + 1}</td>
-        <td><span class="avatar-placeholder">${initial}</span> ${item.lead}</td>
-        <td>${item.name}</td>
-        <td>${item.category}</td>
-        <td class="score-cell">${item.score}</td>
-      </tr>
-    `;
+    return `<tr>
+      <td class="rank">#${index + 1}</td>
+      <td><span class="avatar-placeholder">${item.lead.charAt(0).toUpperCase()}</span> ${item.lead}</td>
+      <td>${item.name}</td>
+      <td>${item.category}</td>
+      <td class="score-cell">${item.score}</td>
+    </tr>`;
   }).join('');
 }
 
@@ -143,20 +117,13 @@ function renderChampionCard(data) {
     return;
   }
 
-  const champion = data[0];
-  champName.textContent = champion.lead;
-  champProject.textContent = champion.name;
+  champName.textContent = data[0].lead;
+  champProject.textContent = data[0].name;
 
-  const runnerUps = data.slice(1, 4).filter(item => item.score > 0);
-  runnerUpsContainer.innerHTML = runnerUps.map((item, index) => {
-    return `
-      <div class="runner-up-item">
-        <div>
-          <span class="runner-up-rank">#${index + 2}</span>
-          <span style="color:rgba(255,255,255,0.85);">${item.lead}</span>
-        </div>
-        <span class="runner-up-score">${item.score}</span>
-      </div>
-    `;
+  runnerUpsContainer.innerHTML = data.slice(1, 4).filter(item => item.score > 0).map((item, index) => {
+    return `<div class="runner-up-item">
+      <div><span class="runner-up-rank">#${index + 2}</span> <span style="color:rgba(255,255,255,0.85);">${item.lead}</span></div>
+      <span class="runner-up-score">${item.score}</span>
+    </div>`;
   }).join('');
 }
