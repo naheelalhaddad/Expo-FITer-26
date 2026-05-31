@@ -2,12 +2,18 @@ const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const JUDGE_DIRECTORY = {
+  'robo1@email.com': 'Robotics',
+  'tech2@email.com': 'Technology',
+  'inno3@email.com': 'Innovation',
+  'test_judge@asu.edu.jo': '[Category 1]'
+};
+
 let currentProject = null;
 let overallValue = 75;
 let criteriaValues = {};
 let activeCategory = 'All';
 
-const categories = ["[Category 1]", "[Category 2]", "[Category 3]", "[Category 4]", "[Category 5]"];
 const projects = [
   { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#6b1a2a','#300a12'], voted: false },
   { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#4a1020','#1f040b'], voted: false },
@@ -31,20 +37,25 @@ const criteria = [
   { name:'[Criterion 3]', key:'c3' }
 ];
 
-(async function initApp() {
+window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session }, error } = await supabaseClient.auth.getSession();
   
   window.ACTIVE_USER_EMAIL = session ? session.user.email : 'test_judge@asu.edu.jo';
+  activeCategory = JUDGE_DIRECTORY[window.ACTIVE_USER_EMAIL] || 'All';
+  
   document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
+  document.getElementById('search-input').placeholder = `Search ${activeCategory} projects...`;
+  
+  const slider = document.getElementById('category-slider');
+  if (slider) slider.style.display = 'none';
 
-  initCategories();
-  renderCards(projects);
+  renderCards(projects.filter(p => p.category === activeCategory));
   updateProgress();
   lockPastEvaluations();
 
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
-})();
+});
 
 async function submitVoteToSupabase() {
   const btn = document.getElementById('submit-btn-element');
@@ -83,33 +94,33 @@ async function lockPastEvaluations() {
 }
 
 function getRangeLabel(val) { return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label; }
-function updateProgress() { document.getElementById('nav-progress').textContent = `${projects.filter(p => p.voted).length} / ${projects.length} EVALUATED`; }
 
-function initCategories() {
-  const catContainer = document.getElementById('category-slider');
-  catContainer.innerHTML = `<div class="cat-pill active" onclick="setCategory('All', this)">All Categories</div>` + categories.map(c => `<div class="cat-pill" onclick="setCategory('${c}', this)">${c}</div>`).join('');
-}
-
-function setCategory(cat, el) {
-  activeCategory = cat;
-  document.querySelectorAll('.cat-pill').forEach(pill => pill.classList.remove('active'));
-  el.classList.add('active');
-  filterProjects();
+function updateProgress() { 
+  const categoryProjects = projects.filter(p => p.category === activeCategory);
+  const votedCount = categoryProjects.filter(p => p.voted).length;
+  document.getElementById('nav-progress').textContent = `${votedCount} / ${categoryProjects.length} EVALUATED`; 
 }
 
 function filterProjects() {
   const query = document.getElementById('search-input').value.toLowerCase();
-  renderCards(projects.filter(p => (activeCategory === 'All' || p.category === activeCategory) && (p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query))));
+  renderCards(projects.filter(p => 
+    p.category === activeCategory && 
+    (p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query))
+  ));
 }
 
 function renderCards(dataSet) {
   const trackElement = document.getElementById('cards-track');
-  const offsetCalc = (window.innerWidth / 2) - 175;
-  trackElement.style.paddingLeft = `${Math.max(32, offsetCalc)}px`;
-  trackElement.style.paddingRight = `${Math.max(32, offsetCalc)}px`;
+  
+  const isMobile = window.innerWidth <= 768;
+  const cardWidth = isMobile ? (window.innerWidth * 0.8) : 350;
+  const offsetCalc = (window.innerWidth / 2) - (cardWidth / 2);
+  
+  trackElement.style.paddingLeft = `${Math.max(20, offsetCalc)}px`;
+  trackElement.style.paddingRight = `${Math.max(20, offsetCalc)}px`;
 
   if (dataSet.length === 0) {
-    trackElement.innerHTML = `<div style="color:var(--sub); padding:4rem; font-family:'IBM Plex Mono'; text-align:center;">No projects found.</div>`;
+    trackElement.innerHTML = `<div style="color:var(--sub); padding:4rem; font-family:'IBM Plex Mono'; text-align:center;">No projects found for your assigned category.</div>`;
     buildDots(0);
     return;
   }
@@ -133,6 +144,7 @@ function renderCards(dataSet) {
 }
 
 function buildDots(count) { document.getElementById('dots').innerHTML = Array.from({length: count}, (_, i) => `<div class="dot ${i===0?'active':''}" onclick="scrollToCard(${i})"></div>`).join(''); }
+
 function scrollToCard(index) { const track = document.getElementById('cards-track'); if(track.children[index]) track.children[index].scrollIntoView({ behavior: 'smooth', inline: 'center' }); }
 
 document.getElementById('cards-track').addEventListener('scroll', () => {
