@@ -3,18 +3,18 @@ const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const JUDGE_DIRECTORY = {
-  'robo1@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
-  'robo2@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
-  'ai1@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
-  'ai2@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
-  'ai3@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
-  'cloud1@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
-  'cloud2@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
-  'cyber1@fit.edu': 'CyberShield: Future of Cybersecurity',
-  'cyber2@fit.edu': 'CyberShield: Future of Cybersecurity',
-  'web1@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
-  'web2@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
-  'web3@fit.edu': 'Digital Horizons: Web & Mobile Innovation'
+  'robo1@fit.edu.jo': 'RoboSphere: Robotics & Autonomous Drones',
+  'robo2@fit.edu.jo': 'RoboSphere: Robotics & Autonomous Drones',
+  'ai1@fit.edu.jo': 'Intelligence Frontier: AI & Machine Learning',
+  'ai2@fit.edu.jo': 'Intelligence Frontier: AI & Machine Learning',
+  'ai3@fit.edu.jo': 'Intelligence Frontier: AI & Machine Learning',
+  'cloud1@fit.edu.jo': 'CloudVerse: Smart IoT & Cloud Technologies',
+  'cloud2@fit.edu.jo': 'CloudVerse: Smart IoT & Cloud Technologies',
+  'cyber1@fit.edu.jo': 'CyberShield: Future of Cybersecurity',
+  'cyber2@fit.edu.jo': 'CyberShield: Future of Cybersecurity',
+  'web1@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation',
+  'web2@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation',
+  'web3@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation'
 };
 
 let currentProject = null;
