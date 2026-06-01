@@ -16,12 +16,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
-  if (error) {
+if (error) {
     errorMsg.textContent = "Authentication Failed. Verify credentials.";
     btn.disabled = false;
     btn.textContent = 'Secure Login';
   } else {
-    if (data.session.user.email === 'admin@fit.edu') {
+    if (data.session.user.email === 'admin@fit.edu.jo') {
       window.location.replace('admin.html');
     } else {
       window.location.replace('projects.html');
