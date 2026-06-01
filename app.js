@@ -3,10 +3,27 @@ const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const JUDGE_DIRECTORY = {
-  'robo1@email.com': 'Robotics',
-  'tech2@email.com': 'Technology',
-  'inno3@email.com': 'Innovation',
-  'test_judge@asu.edu.jo': '[Category 1]'
+  // RoboSphere: Robotics & Autonomous Drones
+  'robo1@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
+  'robo2@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
+
+  // Intelligence Frontier: AI & Machine Learning
+  'ai1@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
+  'ai2@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
+  'ai3@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
+
+  // CloudVerse: Smart IoT & Cloud Technologies
+  'cloud1@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
+  'cloud2@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
+
+  // CyberShield: Future of Cybersecurity
+  'cyber1@fit.edu': 'CyberShield: Future of Cybersecurity',
+  'cyber2@fit.edu': 'CyberShield: Future of Cybersecurity',
+
+  // Digital Horizons: Web & Mobile Innovation
+  'web1@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
+  'web2@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
+  'web3@fit.edu': 'Digital Horizons: Web & Mobile Innovation'
 };
 
 let currentProject = null;
