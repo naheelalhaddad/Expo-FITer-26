@@ -45,8 +45,12 @@ const colorPalette = [
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   
-  // Default to ai1 for testing if no active login session exists
-  window.ACTIVE_USER_EMAIL = session ? session.user.email : 'ai1@fit.edu';
+  if (!session || session.user.email === 'admin@fit.edu') {
+    window.location.replace('index.html');
+    return;
+  }
+  
+  window.ACTIVE_USER_EMAIL = session.user.email;
   activeCategory = JUDGE_DIRECTORY[window.ACTIVE_USER_EMAIL] || 'All';
   
   document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
