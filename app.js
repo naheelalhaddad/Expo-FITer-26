@@ -148,16 +148,22 @@ function renderCards(dataSet) {
     return;
   }
 
-  trackElement.innerHTML = dataSet.map(p => {
+ trackElement.innerHTML = dataSet.map(p => {
     const globalIdx = projects.findIndex(orig => orig.num === p.num);
     return `<div class="proj-card" onclick="openEval(${globalIdx})">
       <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)"></div>
       <div class="proj-card-overlay"></div>
-      <div class="proj-card-content">
+      <div class="proj-card-content" style="padding: 2rem;">
         <div class="proj-card-tag">${p.category.split(':')[0]}</div>
-        <div class="proj-card-num">${p.num}</div>
-        <div class="proj-card-name">${p.name}</div>
-        <div class="proj-card-members">${p.members.slice(0,2).join(' · ')}${p.members.length > 2 ? '...' : ''}</div>
+        <div class="proj-card-name" style="font-size: 3.5rem; line-height: 1; margin-bottom: 1.25rem;">${p.num}</div>
+        <div class="proj-card-members" style="flex: 1; display:flex; flex-direction:column; gap:8px; margin-bottom: 1.5rem;">
+          ${p.members.map(m => `
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:6px; height:6px; border-radius:50%; background:var(--red); flex-shrink: 0;"></div>
+              <span style="font-size:14px; color:rgba(255,255,255,0.95); font-weight: 500;">${m}</span>
+            </div>
+          `).join('')}
+        </div>
         <button class="card-eval-btn">Evaluate Project</button>
         ${p.voted ? `<div class="voted-badge" style="display:block">✓ Evaluation Transmitted</div>` : ''}
       </div>
@@ -189,8 +195,8 @@ function openEval(idx) {
   
   document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
   document.getElementById('exp-tag').textContent = p.category.split(':')[0];
-  document.getElementById('exp-num').textContent = p.num;
-  document.getElementById('exp-name').textContent = p.name;
+  document.getElementById('exp-num').textContent = 'TEAM';
+  document.getElementById('exp-name').textContent = p.num;
   document.getElementById('exp-abstract').textContent = p.abstract;
   document.getElementById('exp-supervisor').textContent = p.supervisor;
   document.getElementById('exp-category').textContent = p.category.split(':')[0];
