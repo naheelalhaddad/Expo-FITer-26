@@ -7,6 +7,13 @@ let currentCategory = 'Overall';
 let adminProjects = [];
 
 window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  
+  if (!session || session.user.email !== 'admin@fit.edu') {
+    window.location.replace('index.html');
+    return;
+  }
+
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
