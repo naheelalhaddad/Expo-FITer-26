@@ -113,7 +113,7 @@ function renderTable(data) {
   if (!tbody) return;
   if (data.length === 0) return tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:3rem;">No projects found.</td></tr>`;
 
-  tbody.innerHTML = data.map((item, index) => {
+ tbody.innerHTML = data.map((item, index) => {
     return `<tr>
       <td class="rank">#${index + 1}</td>
       <td><span class="avatar-placeholder">${item.lead.charAt(0).toUpperCase()}</span> ${item.lead}</td>
