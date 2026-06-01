@@ -45,7 +45,7 @@ const colorPalette = [
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   
-  if (!session || session.user.email === 'admin@fit.edu') {
+  if (!session || session.user.email === 'admin@fit.edu.jo') {
     window.location.replace('index.html');
     return;
   }
