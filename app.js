@@ -3,71 +3,78 @@ const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const JUDGE_DIRECTORY = {
-  // RoboSphere: Robotics & Autonomous Drones
   'robo1@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
   'robo2@fit.edu': 'RoboSphere: Robotics & Autonomous Drones',
-
-  // Intelligence Frontier: AI & Machine Learning
   'ai1@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
   'ai2@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
   'ai3@fit.edu': 'Intelligence Frontier: AI & Machine Learning',
-
-  // CloudVerse: Smart IoT & Cloud Technologies
   'cloud1@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
   'cloud2@fit.edu': 'CloudVerse: Smart IoT & Cloud Technologies',
-
-  // CyberShield: Future of Cybersecurity
   'cyber1@fit.edu': 'CyberShield: Future of Cybersecurity',
   'cyber2@fit.edu': 'CyberShield: Future of Cybersecurity',
-
-  // Digital Horizons: Web & Mobile Innovation
   'web1@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
   'web2@fit.edu': 'Digital Horizons: Web & Mobile Innovation',
   'web3@fit.edu': 'Digital Horizons: Web & Mobile Innovation'
 };
 
 let currentProject = null;
-let overallValue = 75;
 let criteriaValues = {};
 let activeCategory = 'All';
-
-const projects = [
-  { num:'P-001', name:'[Project Name 1]', category:'[Category 1]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#6b1a2a','#300a12'], voted: false },
-  { num:'P-002', name:'[Project Name 2]', category:'[Category 2]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#4a1020','#1f040b'], voted: false },
-  { num:'P-003', name:'[Project Name 3]', category:'[Category 3]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#8a2236','#400c19'], voted: false },
-  { num:'P-004', name:'[Project Name 4]', category:'[Category 4]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#5c1422','#29070e'], voted: false },
-  { num:'P-005', name:'[Project Name 5]', category:'[Category 5]', supervisor:'[Supervisor Name]', members:['[Member 1]','[Member 2]','[Member 3]'], abstract:'[Project abstract placeholder]', colors:['#7a1c2e','#380914'], voted: false }
-];
+let projects = [];
 
 const rangeLabels = [
   { max:20,  label:'Poor — Does not meet basic requirements' },
-  { max:40,  label:'Below Average — Significant gaps in execution' },
-  { max:60,  label:'Average — Meets some requirements with notable gaps' },
-  { max:75,  label:'Good — Solid project with minor areas for improvement' },
-  { max:90,  label:'Very Good — Exceeds expectations in most areas' },
-  { max:100, label:'Excellent — Outstanding, exceptional quality' }
+  { max:40,  label:'Below Average — Significant gaps' },
+  { max:60,  label:'Average — Meets requirements with notable gaps' },
+  { max:75,  label:'Good — Solid execution with minor flaws' },
+  { max:90,  label:'Very Good — Exceeds expectations' },
+  { max:100, label:'Excellent — Outstanding quality' }
 ];
 
 const criteria = [
-  { name:'[Criterion 1]', key:'c1' },
-  { name:'[Criterion 2]', key:'c2' },
-  { name:'[Criterion 3]', key:'c3' }
+  { name:'Innovation & Originality', key:'c1' },
+  { name:'Technical Complexity & Execution', key:'c2' },
+  { name:'Presentation & Usability', key:'c3' }
+];
+
+const colorPalette = [
+  ['#6b1a2a','#300a12'], ['#4a1020','#1f040b'], ['#8a2236','#400c19'],
+  ['#5c1422','#29070e'], ['#7a1c2e','#380914']
 ];
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const { data: { session }, error } = await supabaseClient.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   
-  window.ACTIVE_USER_EMAIL = session ? session.user.email : 'test_judge@asu.edu.jo';
+  // Default to ai1 for testing if no active login session exists
+  window.ACTIVE_USER_EMAIL = session ? session.user.email : 'ai1@fit.edu';
   activeCategory = JUDGE_DIRECTORY[window.ACTIVE_USER_EMAIL] || 'All';
   
   document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
-  document.getElementById('search-input').placeholder = `Search ${activeCategory} projects...`;
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.placeholder = `Search assigned track...`;
   
   const slider = document.getElementById('category-slider');
   if (slider) slider.style.display = 'none';
 
-  renderCards(projects.filter(p => p.category === activeCategory));
-  updateProgress();
+  // Fetch from the new Database Table
+  const { data: teamsData, error } = await supabaseClient.from('teams').select('*');
+  
+  if (!error && teamsData) {
+    projects = teamsData.map((t, index) => ({
+      num: t.team_number,
+      name: `Team ${t.team_number}`,
+      category: t.competition_track,
+      supervisor: t.supervisor_name,
+      members: t.students.split('\n').filter(s => s.trim() !== ''),
+      abstract: 'Project details available during presentation.',
+      colors: colorPalette[index % colorPalette.length],
+      voted: false
+    }));
+  }
+
+  // Enforce the IAM Filter Lock
+  const assignedProjects = projects.filter(p => p.category === activeCategory);
+  renderCards(assignedProjects);
   lockPastEvaluations();
 
   const video = document.getElementById('bg-video-stream');
@@ -84,13 +91,12 @@ async function submitVoteToSupabase() {
       project_num:   currentProject.num,
       criterion_1:   criteriaValues['c1'] || 75,
       criterion_2:   criteriaValues['c2'] || 75,
-      criterion_3:   criteriaValues['c3'] || 75,
-      overall_score: overallValue
+      criterion_3:   criteriaValues['c3'] || 75
   }]);
 
   if (error) {
     if (error.code === '23505') alert("Already evaluated this project!");
-    else alert("Error: " + error.message);
+    else alert("Database Error: " + error.message);
     btn.disabled = false;
     btn.textContent = 'Submit Evaluation';
   } else {
@@ -122,7 +128,7 @@ function filterProjects() {
   const query = document.getElementById('search-input').value.toLowerCase();
   renderCards(projects.filter(p => 
     p.category === activeCategory && 
-    (p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query))
+    (p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query) || p.members.some(m => m.toLowerCase().includes(query)))
   ));
 }
 
@@ -137,7 +143,7 @@ function renderCards(dataSet) {
   trackElement.style.paddingRight = `${Math.max(20, offsetCalc)}px`;
 
   if (dataSet.length === 0) {
-    trackElement.innerHTML = `<div style="color:var(--sub); padding:4rem; font-family:'IBM Plex Mono'; text-align:center;">No projects found for your assigned category.</div>`;
+    trackElement.innerHTML = `<div style="color:var(--sub); padding:4rem; font-family:'IBM Plex Mono'; text-align:center;">No projects found.</div>`;
     buildDots(0);
     return;
   }
@@ -148,10 +154,10 @@ function renderCards(dataSet) {
       <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)"></div>
       <div class="proj-card-overlay"></div>
       <div class="proj-card-content">
-        <div class="proj-card-tag">${p.category}</div>
+        <div class="proj-card-tag">${p.category.split(':')[0]}</div>
         <div class="proj-card-num">${p.num}</div>
         <div class="proj-card-name">${p.name}</div>
-        <div class="proj-card-members">${p.members.slice(0,3).join(' · ')}</div>
+        <div class="proj-card-members">${p.members.slice(0,2).join(' · ')}${p.members.length > 2 ? '...' : ''}</div>
         <button class="card-eval-btn">Evaluate Project</button>
         ${p.voted ? `<div class="voted-badge" style="display:block">✓ Evaluation Transmitted</div>` : ''}
       </div>
@@ -178,26 +184,24 @@ document.getElementById('cards-track').addEventListener('scroll', () => {
 
 function openEval(idx) {
   currentProject = projects[idx];
-  overallValue = 75;
   criteria.forEach(c => criteriaValues[c.key] = 75);
   const p = currentProject;
+  
   document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
-  document.getElementById('exp-tag').textContent = p.category;
+  document.getElementById('exp-tag').textContent = p.category.split(':')[0];
   document.getElementById('exp-num').textContent = p.num;
   document.getElementById('exp-name').textContent = p.name;
   document.getElementById('exp-abstract').textContent = p.abstract;
   document.getElementById('exp-supervisor').textContent = p.supervisor;
-  document.getElementById('exp-category').textContent = p.category;
+  document.getElementById('exp-category').textContent = p.category.split(':')[0];
   document.getElementById('exp-members').innerHTML = p.members.map(m => `<div class="member-item"><div class="member-dot"></div>${m}</div>`).join('');
+  
   document.getElementById('criteria-list').innerHTML = criteria.map(c => `<div class="criterion"><div class="criterion-header"><span class="criterion-name">${c.name}</span><span class="criterion-score-display" id="score-${c.key}">75 / 100</span></div><input type="range" min="0" max="100" value="75" oninput="updateCriterion('${c.key}', this.value)" ${p.voted ? 'disabled' : ''}/><div class="range-hint"><span>0</span><span>50</span><span>100</span></div><div class="range-label" id="label-${c.key}">${getRangeLabel(75)}</div></div>`).join('');
-  document.getElementById('overall-num').textContent = p.voted ? 'LOCKED' : 75;
-  document.getElementById('overall-slider').value = 75;
-  document.getElementById('overall-slider').disabled = p.voted;
-  document.getElementById('overall-range-label').textContent = getRangeLabel(75);
+  
   document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
   const lockedState = document.getElementById('locked-state');
   p.voted ? lockedState.classList.add('visible') : lockedState.classList.remove('visible');
-  if(p.voted) document.getElementById('locked-score-text').textContent = "Locked in Database";
+  
   const ov = document.getElementById('expanded-overlay');
   ov.classList.add('visible');
   ov.scrollTop = 0;
@@ -211,17 +215,10 @@ function updateCriterion(key, val) {
   document.getElementById(`label-${key}`).textContent = getRangeLabel(parseInt(val));
 }
 
-function updateOverall(val) {
-  overallValue = parseInt(val);
-  document.getElementById('overall-num').textContent = val;
-  document.getElementById('overall-range-label').textContent = getRangeLabel(parseInt(val));
-}
-
 function finalizeSubmissionUI() {
   const idx = projects.indexOf(currentProject);
   if (idx !== -1) projects[idx].voted = true;
   document.getElementById('voting-ui').style.display = 'none';
-  document.getElementById('locked-score-text').textContent = `Overall Score: ${overallValue} / 100`;
   document.getElementById('locked-state').classList.add('visible');
   updateProgress();
   filterProjects();
