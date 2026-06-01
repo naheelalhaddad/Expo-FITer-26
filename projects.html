@@ -20,7 +20,7 @@
   <div class="nav">
     <div class="nav-left">
       <div class="brand-container">
-        <img src="Expo_FITers_GP.svg" alt="Expo FITers GP" />
+        <img src="ExpoFITers_WhiteLogo.png" alt="Expo FITers GP" />
       </div>
       <div class="partner-container">
         <img src="ASU_logo_white.png" alt="Applied Science Private University" />
@@ -48,35 +48,35 @@
   </div>
 </div>
 
-<div class="expanded-overlay" id="expanded-overlay" role="dialog" aria-modal="true" aria-labelledby="exp-name" tabindex="-1">
+<div class="expanded-overlay" id="expanded-overlay">
   <div class="expanded-inner">
-    <button class="back-btn" onclick="closeExpanded()" id="close-modal-btn">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 7H4M6.5 4L4 7l2.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Back to projects
+    <button class="back-btn" onclick="closeExpanded()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Return to Floor
     </button>
     <div class="exp-hero">
       <div class="exp-hero-bg" id="exp-hero-bg"></div>
       <div class="exp-hero-overlay"></div>
       <div class="exp-hero-content">
-        <div class="exp-tag" id="exp-tag"></div>
-        <div class="exp-num" id="exp-num"></div>
-        <div class="exp-name" id="exp-name"></div>
+        <div class="exp-tag" id="exp-tag">CATEGORY</div>
+        <div class="exp-num" id="exp-num">P-000</div>
+        <div class="exp-name" id="exp-name">PROJECT TITLE</div>
       </div>
     </div>
     <div class="info-card">
       <div>
-        <div class="info-section-title">Abstract</div>
-        <div class="info-abstract" id="exp-abstract"></div>
+        <div class="info-section-title">Abstract / Objective</div>
+        <div class="info-abstract" id="exp-abstract">Loading abstract...</div>
       </div>
       <div class="info-divider"></div>
       <div class="info-meta-grid">
         <div>
           <div class="info-meta-label">Supervisor</div>
-          <div class="info-meta-value" id="exp-supervisor"></div>
+          <div class="info-meta-value" id="exp-supervisor">Name</div>
         </div>
         <div>
-          <div class="info-meta-label">Category</div>
-          <div class="info-meta-value" id="exp-category"></div>
+          <div class="info-meta-label">Competition Track</div>
+          <div class="info-meta-value" id="exp-category">Category</div>
         </div>
       </div>
       <div class="info-divider"></div>
@@ -87,47 +87,29 @@
     </div>
     <div class="rating-card">
       <div class="rating-card-top"></div>
-      <div class="rating-card-inner">
-        <div>
-          <div class="rating-title">Evaluate Project</div>
-          <div class="rating-sub">[Criteria descriptions will be added once the rubric is finalized]</div>
+      <div class="rating-title">Evaluation</div>
+      <div class="rating-sub">Assess the project based on the primary rubrics below.</div>
+      <div class="rating-divider"></div>
+      <div class="criteria-list" id="criteria-list"></div>
+      <div class="rating-divider"></div>
+      <div id="voting-ui">
+        <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
+          Submit Evaluation
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="submit-note">Scores cannot be altered once transmitted to the database.</div>
+      </div>
+      <div class="locked-state" id="locked-state">
+        <div class="locked-icon">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M7 11V8a6 6 0 0112 0v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="3" y="11" width="20" height="12" rx="2.5" stroke="#fff" stroke-width="2"/><circle cx="13" cy="18" r="2" fill="#fff"/></svg>
         </div>
-        <div class="criteria-list" id="criteria-list"></div>
-        <div class="rating-divider"></div>
-        <div class="overall-wrap">
-          <div class="info-section-title">Overall Score</div>
-          <div class="overall-display">
-            <div class="overall-num" id="overall-num">75</div>
-            <div class="overall-outof">out of 100</div>
-          </div>
-          <input type="range" id="overall-slider" min="0" max="100" value="75" oninput="updateOverall(this.value)" />
-          <div class="range-hint">
-            <span>0</span><span>50</span><span>100</span>
-          </div>
-          <div class="range-label" id="overall-range-label">Good — Solid project with minor areas for improvement</div>
-        </div>
-        <div class="rating-divider"></div>
-        <div id="voting-ui">
-          <button class="btn-submit" onclick="submitVoteToSupabase()" id="submit-btn-element">
-            Submit Evaluation
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div class="submit-note">Scores cannot be altered once transmitted to the database.</div>
-        </div>
-        <div class="locked-state" id="locked-state">
-          <div class="locked-icon">
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M7 11V8a6 6 0 0112 0v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="3" y="11" width="20" height="12" rx="2.5" stroke="#fff" stroke-width="2"/><circle cx="13" cy="18" r="2" fill="#fff"/></svg>
-          </div>
-          <div class="locked-title">Transmission Successful</div>
-          <div class="locked-sub">Evaluation data stored securely.</div>
-          <div class="locked-score-badge" id="locked-score-text"></div>
-        </div>
+        <div class="locked-title">Transmission Successful</div>
+        <div class="locked-sub">Evaluation data stored securely.</div>
+        <div class="locked-score-badge" id="locked-score-text">Locked in Database</div>
       </div>
     </div>
-    <div style="height:2rem"></div>
   </div>
 </div>
-
 <script src="app.js"></script>
 </body>
 </html>
