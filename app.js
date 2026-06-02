@@ -111,18 +111,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   if (!error && teamsData) {
     projects = teamsData.map((t, index) => ({
-      num: t.team_number,
-      name: `Team ${t.team_number}`,
-      category: t.competition_track.trim(),
-      supervisor: t.supervisor_name,
-      members: t.students.split('\n').filter(s => s.trim() !== ''),
+      num: t.team_number || `P-${index}`,
+      name: `Team ${t.team_number || index}`,
+      category: (t.competition_track || '').trim(),
+      supervisor: t.supervisor_name || 'Unknown',
+      members: (t.students || '').split('\n').filter(s => s.trim() !== ''),
       abstract: 'Project details available during presentation.',
       colors: colorPalette[index % colorPalette.length],
       voted: false
     }));
   }
 
-  const assignedProjects = projects.filter(p => p.category === activeCategory);
+  const assignedProjects = activeCategory === 'All' ? projects : projects.filter(p => p.category === activeCategory);
   renderCards(assignedProjects);
   lockPastEvaluations();
 
@@ -175,7 +175,7 @@ async function lockPastEvaluations() {
 function getRangeLabel(val) { return rangeLabels.find(r => val <= r.max)?.label || rangeLabels[rangeLabels.length-1].label; }
 
 function updateProgress() { 
-  const categoryProjects = projects.filter(p => p.category === activeCategory);
+  const categoryProjects = activeCategory === 'All' ? projects : projects.filter(p => p.category === activeCategory);
   const votedCount = categoryProjects.filter(p => p.voted).length;
   document.getElementById('nav-progress').textContent = `${votedCount} / ${categoryProjects.length} EVALUATED`; 
 }
@@ -183,7 +183,7 @@ function updateProgress() {
 function filterProjects() {
   const query = document.getElementById('search-input').value.toLowerCase();
   renderCards(projects.filter(p => 
-    p.category === activeCategory && 
+    (activeCategory === 'All' || p.category === activeCategory) && 
     (p.name.toLowerCase().includes(query) || p.num.toLowerCase().includes(query) || p.members.some(m => m.toLowerCase().includes(query)))
   ));
 }
