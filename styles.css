@@ -173,7 +173,7 @@ td { font-size: 14px; color: rgba(255,255,255,0.9); }
 @media (max-width: 768px) {
   .nav { padding: 0.75rem 1rem; flex-direction: column; justify-content: center; height: auto; gap: 14px; }
   .nav-left { flex-direction: column; gap: 12px; width: 100%; align-items: center; }
-.brand-container { height: 90px; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .brand-container { height: 90px; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .brand-container img { max-height: 85px; }
   .partner-container { gap: 12px; border-left: none; padding-left: 0; flex-wrap: wrap; justify-content: center; height: auto; }
   .partner-container img { max-height: 36px; }
@@ -200,4 +200,48 @@ td { font-size: 14px; color: rgba(255,255,255,0.9); }
   .champion-card { padding: 1.5rem; }
   .champion-badge { width: 80px; height: 80px; font-size: 2.5rem; }
   th, td { padding: 0.75rem; font-size: 13px; }
+}
+
+/* === ADMIN DASHBOARD PAGE SCROLLING & ANDROID OPTIMIZATION === */
+body.admin-layout { 
+  overflow-y: auto !important; 
+  height: auto !important; 
+  min-height: 100vh; 
+  -webkit-overflow-scrolling: touch; 
+}
+
+.admin-layout .page { 
+  height: auto !important; 
+  display: block; 
+  padding-bottom: 4rem; 
+}
+
+.admin-layout .dashboard-container { 
+  height: auto !important; 
+  overflow: visible !important; 
+  align-items: flex-start; 
+}
+
+.admin-layout .main-panel { 
+  max-height: none !important; 
+  overflow: visible !important; 
+}
+
+.admin-layout .side-panel { 
+  position: static !important;
+  height: auto !important;
+  max-height: none !important;
+  margin-bottom: 2rem;
+}
+
+.admin-layout .table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .admin-layout .side-panel {
+    order: -1;
+  }
 }
