@@ -20,10 +20,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => ({
-      num: t.team_number || 'UNKNOWN',
-      name: `Team ${t.team_number || 'UNKNOWN'}`,
-      category: (t.competition_track || '').trim(),
-      lead: (t.students || '').split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
+      num: t.team_number,
+      name: `Team ${t.team_number}`,
+      category: t.competition_track.trim(),
+      lead: t.students.split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
     }));
   }
 
