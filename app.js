@@ -31,11 +31,58 @@ const rangeLabels = [
   { max:100, label:'Excellent — Outstanding quality' }
 ];
 
-const criteria = [
-  { name:'Innovation & Originality', key:'c1' },
-  { name:'Technical Complexity & Execution', key:'c2' },
-  { name:'Presentation & Usability', key:'c3' }
-];
+const TRACK_CRITERIA = {
+  'RoboSphere: Robotics & Autonomous Drones': [
+    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
+    { name: 'User Interface & Control Experience', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', key: 'c3', max: 15 },
+    { name: 'Robotics Innovation Level', key: 'c4', max: 15 },
+    { name: 'System Speed & Responsiveness', key: 'c5', max: 10 },
+    { name: 'Hardware Integration & Electronics', key: 'c6', max: 10 },
+    { name: 'Autonomous Capabilities', key: 'c7', max: 10 },
+    { name: 'Performance & Accuracy', key: 'c8', max: 10 }
+  ],
+  'Intelligence Frontier: AI & Machine Learning': [
+    { name: 'Presentation and Q&A Quality', key: 'c1', max: 15 },
+    { name: 'User Interface & Experience', key: 'c2', max: 15 },
+    { name: 'Use of Modern AI/ML Technologies', key: 'c3', max: 15 },
+    { name: 'Model Accuracy & Performance', key: 'c4', max: 15 },
+    { name: 'AI Innovation Level', key: 'c5', max: 15 },
+    { name: 'Practical Applicability', key: 'c6', max: 10 },
+    { name: 'Data Quality and Processing', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+  ],
+  'CloudVerse: Smart IoT & Cloud Technologies': [
+    { name: 'Use of Modern Technologies', key: 'c1', max: 20 },
+    { name: 'Presentation & Q&A Quality', key: 'c2', max: 15 },
+    { name: 'User Interface & Experience', key: 'c3', max: 15 },
+    { name: 'Innovation Level', key: 'c4', max: 15 },
+    { name: 'Practical Applicability', key: 'c5', max: 10 },
+    { name: 'Hardware & Device Integration', key: 'c6', max: 10 },
+    { name: 'Cloud Infrastructure & Data Management', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+  ],
+  'CyberShield: Future of Cybersecurity': [
+    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
+    { name: 'User Interface & Experience', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', key: 'c3', max: 15 },
+    { name: 'Cybersecurity Innovation Level', key: 'c4', max: 15 },
+    { name: 'System Speed & Responsiveness', key: 'c5', max: 10 },
+    { name: 'Security Analysis & Threat Detection', key: 'c6', max: 10 },
+    { name: 'Use of Modern Cybersecurity Tech', key: 'c7', max: 10 },
+    { name: 'Effectiveness & Accuracy', key: 'c8', max: 10 }
+  ],
+  'Digital Horizons: Web & Mobile Innovation': [
+    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
+    { name: 'UI/UX & Design Quality', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', key: 'c3', max: 15 },
+    { name: 'AI System Design & Custom API', key: 'c4', max: 15 },
+    { name: 'Problem-Solving Impact & Creativity', key: 'c5', max: 15 },
+    { name: 'Backend, Database & Cloud Integration', key: 'c6', max: 10 },
+    { name: 'Advanced Innovation & Tech Use', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+  ]
+};
 
 const colorPalette = [
   ['#6b1a2a','#300a12'], ['#4a1020','#1f040b'], ['#8a2236','#400c19'],
