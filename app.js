@@ -107,13 +107,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const slider = document.getElementById('category-slider');
   if (slider) slider.style.display = 'none';
 
+ // Fetch from the new Database Table
   const { data: teamsData, error } = await supabaseClient.from('teams').select('*');
   
   if (!error && teamsData) {
     projects = teamsData.map((t, index) => ({
       num: t.team_number,
       name: `Team ${t.team_number}`,
-      category: t.competition_track,
+      category: t.competition_track.trim(), // Strips invisible SQL spaces
       supervisor: t.supervisor_name,
       members: t.students.split('\n').filter(s => s.trim() !== ''),
       abstract: 'Project details available during presentation.',
