@@ -107,7 +107,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const slider = document.getElementById('category-slider');
   if (slider) slider.style.display = 'none';
 
-  // Fetch from the new Database Table
   const { data: teamsData, error } = await supabaseClient.from('teams').select('*');
   
   if (!error && teamsData) {
@@ -123,7 +122,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     }));
   }
 
-  // Enforce the IAM Filter Lock
   const assignedProjects = projects.filter(p => p.category === activeCategory);
   renderCards(assignedProjects);
   lockPastEvaluations();
@@ -137,13 +135,18 @@ async function submitVoteToSupabase() {
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
-  const { error } = await supabaseClient.from('evaluations').insert([{
-      judge_email:   window.ACTIVE_USER_EMAIL,
-      project_num:   currentProject.num,
-      criterion_1:   criteriaValues['c1'] || 75,
-      criterion_2:   criteriaValues['c2'] || 75,
-      criterion_3:   criteriaValues['c3'] || 75
-  }]);
+  const payload = {
+    judge_email: window.ACTIVE_USER_EMAIL,
+    project_num: currentProject.num
+  };
+
+  const currentTrackCriteria = TRACK_CRITERIA[currentProject.category] || [];
+  currentTrackCriteria.forEach(c => {
+    const rawKeyNum = c.key.replace('c', '');
+    payload[`criterion_${rawKeyNum}`] = criteriaValues[c.key] !== undefined ? criteriaValues[c.key] : c.max;
+  });
+
+  const { error } = await supabaseClient.from('evaluations').insert([payload]);
 
   if (error) {
     if (error.code === '23505') alert("Already evaluated this project!");
@@ -199,7 +202,7 @@ function renderCards(dataSet) {
     return;
   }
 
- trackElement.innerHTML = dataSet.map(p => {
+  trackElement.innerHTML = dataSet.map(p => {
     const globalIdx = projects.findIndex(orig => orig.num === p.num);
     return `<div class="proj-card" onclick="openEval(${globalIdx})">
       <div class="proj-card-bg" style="background:linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)"></div>
@@ -241,8 +244,10 @@ document.getElementById('cards-track').addEventListener('scroll', () => {
 
 function openEval(idx) {
   currentProject = projects[idx];
-  criteria.forEach(c => criteriaValues[c.key] = 75);
   const p = currentProject;
+  
+  const currentTrackCriteria = TRACK_CRITERIA[p.category] || [];
+  currentTrackCriteria.forEach(c => criteriaValues[c.key] = c.max);
   
   document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
   document.getElementById('exp-tag').textContent = p.category.split(':')[0];
@@ -253,7 +258,16 @@ function openEval(idx) {
   document.getElementById('exp-category').textContent = p.category.split(':')[0];
   document.getElementById('exp-members').innerHTML = p.members.map(m => `<div class="member-item"><div class="member-dot"></div>${m}</div>`).join('');
   
-  document.getElementById('criteria-list').innerHTML = criteria.map(c => `<div class="criterion"><div class="criterion-header"><span class="criterion-name">${c.name}</span><span class="criterion-score-display" id="score-${c.key}">75 / 100</span></div><input type="range" min="0" max="100" value="75" oninput="updateCriterion('${c.key}', this.value)" ${p.voted ? 'disabled' : ''}/><div class="range-hint"><span>0</span><span>50</span><span>100</span></div><div class="range-label" id="label-${c.key}">${getRangeLabel(75)}</div></div>`).join('');
+  document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
+    <div class="criterion">
+      <div class="criterion-header">
+        <span class="criterion-name">${c.name}</span>
+        <span class="criterion-score-display" id="score-${c.key}">${c.max} / ${c.max}</span>
+      </div>
+      <input type="range" min="0" max="${c.max}" value="${c.max}" oninput="updateCriterion('${c.key}', this.value, ${c.max})" ${p.voted ? 'disabled' : ''}/>
+      <div class="range-hint"><span>0</span><span>${Math.round(c.max/2)}</span><span>${c.max}</span></div>
+    </div>
+  `).join('');
   
   document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
   const lockedState = document.getElementById('locked-state');
@@ -266,10 +280,9 @@ function openEval(idx) {
 
 function closeExpanded() { document.getElementById('expanded-overlay').classList.remove('visible'); }
 
-function updateCriterion(key, val) {
+function updateCriterion(key, val, max) {
   criteriaValues[key] = parseInt(val);
-  document.getElementById(`score-${key}`).textContent = `${val} / 100`;
-  document.getElementById(`label-${key}`).textContent = getRangeLabel(parseInt(val));
+  document.getElementById(`score-${key}`).textContent = `${val} / ${max}`;
 }
 
 function finalizeSubmissionUI() {
@@ -280,38 +293,6 @@ function finalizeSubmissionUI() {
   updateProgress();
   filterProjects();
   confetti();
-}
-
-function confetti() {
-  const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
-  const fragment = document.createDocumentFragment();
-  
-  for (let i = 0; i < 60; i++) {
-    const c = document.createElement('div');
-    c.className = 'confetti-piece';
-    
-    const size = 6 + Math.random() * 8;
-    const startPos = Math.random() * 100;
-    const duration = 1.5 + Math.random() * 2.5;
-    const delay = Math.random() * 0.5;
-    
-    c.style.cssText = `
-      left: ${startPos}vw;
-      top: -10px;
-      width: ${size}px;
-      height: ${size}px;
-      background: ${colors[Math.floor(Math.random() * colors.length)]};
-      animation: confetti-fall ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards;
-    `;
-    
-    fragment.appendChild(c);
-  }
-  
-  document.body.appendChild(fragment);
-  
-  setTimeout(() => {
-    document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
-  }, 4500);
 }
 
 window.addEventListener('resize', filterProjects);
