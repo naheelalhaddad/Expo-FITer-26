@@ -7,7 +7,7 @@ let currentCategory = 'Overall';
 let adminProjects = [];
 
 window.addEventListener('DOMContentLoaded', async () => {
-const { data: { session } } = await supabaseClient.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   
   if (!session || session.user.email !== 'admin@fit.edu.jo') {
     window.location.replace('index.html');
@@ -17,27 +17,24 @@ const { data: { session } } = await supabaseClient.auth.getSession();
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  // 1. Fetch Master List of Teams
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => ({
-      num: t.team_number,
-      name: `Team ${t.team_number}`,
-      category: t.competition_track,
-      lead: t.students.split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
+      num: t.team_number || 'UNKNOWN',
+      name: `Team ${t.team_number || 'UNKNOWN'}`,
+      category: (t.competition_track || '').trim(),
+      lead: (t.students || '').split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
     }));
   }
 
   generateTabs();
 
-  // 2. Fetch Historical Votes
   const { data: evalsData, error: evalsError } = await supabaseClient.from('evaluations').select('*');
   if (!evalsError) {
     rawEvaluations = evalsData;
     processAndRender();
   }
 
-  // 3. Connect Realtime Websocket
   supabaseClient
     .channel('evaluations-channel')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
@@ -54,7 +51,6 @@ function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
   if (!tabsContainer) return;
   
-  // Extract unique short names for tabs (e.g. "RoboSphere")
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allTabs = ['Overall', ...uniqueCategories];
   
@@ -118,36 +114,12 @@ function processAndRender() {
   renderChampionCard(leaderboardData);
 }
 
-  // MATHEMATICAL ENGINE: Averaging by Total Votes
-  let leaderboardData = adminProjects.map(project => {
-    const stats = projectStats[project.num];
-    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
-    
-    return { 
-      num: project.num, 
-      name: project.name, 
-      category: project.category, 
-      lead: project.lead, 
-      score: Number(finalScore.toFixed(2)) 
-    };
-  });
-
-  if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
-  }
-  
-  leaderboardData.sort((a, b) => b.score - a.score);
-
-  renderTable(leaderboardData);
-  renderChampionCard(leaderboardData);
-}
-
 function renderTable(data) {
   const tbody = document.getElementById('leaderboard-body');
   if (!tbody) return;
   if (data.length === 0) return tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:3rem;">No projects found.</td></tr>`;
 
- tbody.innerHTML = data.map((item, index) => {
+  tbody.innerHTML = data.map((item, index) => {
     return `<tr>
       <td class="rank">#${index + 1}</td>
       <td><span class="avatar-placeholder">${item.lead.charAt(0).toUpperCase()}</span> ${item.lead}</td>
