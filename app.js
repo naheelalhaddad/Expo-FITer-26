@@ -246,16 +246,18 @@ function openEval(idx) {
   currentProject = projects[idx];
   const p = currentProject;
   
-  const currentTrackCriteria = TRACK_CRITERIA[p.category] || [];
+  const cleanCategory = p.category.trim();
+  const currentTrackCriteria = TRACK_CRITERIA[cleanCategory] || TRACK_CRITERIA['Digital Horizons: Web & Mobile Innovation'];
+  
   currentTrackCriteria.forEach(c => criteriaValues[c.key] = c.max);
   
   document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
-  document.getElementById('exp-tag').textContent = p.category.split(':')[0];
+  document.getElementById('exp-tag').textContent = cleanCategory.split(':')[0];
   document.getElementById('exp-num').textContent = 'TEAM';
   document.getElementById('exp-name').textContent = p.num;
   document.getElementById('exp-abstract').textContent = p.abstract;
   document.getElementById('exp-supervisor').textContent = p.supervisor;
-  document.getElementById('exp-category').textContent = p.category.split(':')[0];
+  document.getElementById('exp-category').textContent = cleanCategory.split(':')[0];
   document.getElementById('exp-members').innerHTML = p.members.map(m => `<div class="member-item"><div class="member-dot"></div>${m}</div>`).join('');
   
   document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
@@ -276,6 +278,18 @@ function openEval(idx) {
   const ov = document.getElementById('expanded-overlay');
   ov.classList.add('visible');
   ov.scrollTop = 0;
+}
+
+  const { error } = await supabaseClient.from('evaluations').insert([payload]);
+
+  if (error) {
+    if (error.code === '23505') alert("Already evaluated this project!");
+    else alert("Database Error: " + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Submit Evaluation';
+  } else {
+    finalizeSubmissionUI();
+  }
 }
 
 function closeExpanded() { document.getElementById('expanded-overlay').classList.remove('visible'); }
