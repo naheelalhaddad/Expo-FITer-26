@@ -237,16 +237,34 @@ function finalizeSubmissionUI() {
 
 function confetti() {
   const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
+  const fragment = document.createDocumentFragment();
+  
   for (let i = 0; i < 60; i++) {
-    setTimeout(() => {
-      const c = document.createElement('div');
-      c.className = 'confetti-piece';
-      const size = 5 + Math.random() * 8;
-      c.style.cssText = `position:fixed;z-index:1000;left:${15+Math.random()*70}%;top:30%;width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confetti-fall ${1.5+Math.random()*2}s cubic-bezier(.33,.66,.66,1) forwards;`;
-      document.body.appendChild(c);
-      setTimeout(() => c.remove(), 4000);
-    }, i * 25);
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    
+    const size = 6 + Math.random() * 8;
+    const startPos = Math.random() * 100;
+    const duration = 1.5 + Math.random() * 2.5;
+    const delay = Math.random() * 0.5;
+    
+    c.style.cssText = `
+      left: ${startPos}vw;
+      top: -10px;
+      width: ${size}px;
+      height: ${size}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      animation: confetti-fall ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards;
+    `;
+    
+    fragment.appendChild(c);
   }
+  
+  document.body.appendChild(fragment);
+  
+  setTimeout(() => {
+    document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
+  }, 4500);
 }
 
 window.addEventListener('resize', filterProjects);
