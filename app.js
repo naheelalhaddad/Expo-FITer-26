@@ -107,14 +107,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const slider = document.getElementById('category-slider');
   if (slider) slider.style.display = 'none';
 
- // Fetch from the new Database Table
   const { data: teamsData, error } = await supabaseClient.from('teams').select('*');
   
   if (!error && teamsData) {
     projects = teamsData.map((t, index) => ({
       num: t.team_number,
       name: `Team ${t.team_number}`,
-      category: t.competition_track.trim(), // Strips invisible SQL spaces
+      category: t.competition_track.trim(),
       supervisor: t.supervisor_name,
       members: t.students.split('\n').filter(s => s.trim() !== ''),
       abstract: 'Project details available during presentation.',
@@ -141,7 +140,9 @@ async function submitVoteToSupabase() {
     project_num: currentProject.num
   };
 
-  const currentTrackCriteria = TRACK_CRITERIA[currentProject.category] || [];
+  const cleanCategory = currentProject.category.trim();
+  const currentTrackCriteria = TRACK_CRITERIA[cleanCategory] || TRACK_CRITERIA['Digital Horizons: Web & Mobile Innovation'];
+  
   currentTrackCriteria.forEach(c => {
     const rawKeyNum = c.key.replace('c', '');
     payload[`criterion_${rawKeyNum}`] = criteriaValues[c.key] !== undefined ? criteriaValues[c.key] : c.max;
@@ -281,18 +282,6 @@ function openEval(idx) {
   ov.scrollTop = 0;
 }
 
-  const { error } = await supabaseClient.from('evaluations').insert([payload]);
-
-  if (error) {
-    if (error.code === '23505') alert("Already evaluated this project!");
-    else alert("Database Error: " + error.message);
-    btn.disabled = false;
-    btn.textContent = 'Submit Evaluation';
-  } else {
-    finalizeSubmissionUI();
-  }
-}
-
 function closeExpanded() { document.getElementById('expanded-overlay').classList.remove('visible'); }
 
 function updateCriterion(key, val, max) {
@@ -308,6 +297,38 @@ function finalizeSubmissionUI() {
   updateProgress();
   filterProjects();
   confetti();
+}
+
+function confetti() {
+  const colors = ['#6b1a2a','#4a1020','#ffffff','#c31e2d'];
+  const fragment = document.createDocumentFragment();
+  
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    
+    const size = 6 + Math.random() * 8;
+    const startPos = Math.random() * 100;
+    const duration = 1.5 + Math.random() * 2.5;
+    const delay = Math.random() * 0.5;
+    
+    c.style.cssText = `
+      left: ${startPos}vw;
+      top: -10px;
+      width: ${size}px;
+      height: ${size}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      animation: confetti-fall ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards;
+    `;
+    
+    fragment.appendChild(c);
+  }
+  
+  document.body.appendChild(fragment);
+  
+  setTimeout(() => {
+    document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
+  }, 4500);
 }
 
 window.addEventListener('resize', filterProjects);
