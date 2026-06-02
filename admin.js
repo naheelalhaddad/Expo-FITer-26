@@ -77,19 +77,46 @@ window.setTab = function(category, element) {
 
 function processAndRender() {
   const projectStats = {};
-  
-  // MATHEMATICAL ENGINE: Summing ((c1+c2+c3)/3)
+
   rawEvaluations.forEach(record => {
-    const c1 = record.criterion_1 || 0;
-    const c2 = record.criterion_2 || 0;
-    const c3 = record.criterion_3 || 0;
+    let evaluationFinalScore = 0;
 
-    const evaluationFinalScore = (c1 + c2 + c3) / 3;
+    for (let i = 1; i <= 8; i++) {
+      const val = record[`criterion_${i}`];
+      if (val !== null && val !== undefined) {
+        evaluationFinalScore += val;
+      }
+    }
 
-    if (!projectStats[record.project_num]) projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
+    if (!projectStats[record.project_num]) {
+      projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
+    }
     projectStats[record.project_num].totalScore += evaluationFinalScore;
     projectStats[record.project_num].voteCount += 1;
   });
+
+  let leaderboardData = adminProjects.map(project => {
+    const stats = projectStats[project.num];
+    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
+
+    return { 
+      num: project.num, 
+      name: project.name, 
+      category: project.category, 
+      lead: project.lead, 
+      score: Number(finalScore.toFixed(2)) 
+    };
+  });
+
+  if (currentCategory !== 'Overall') {
+    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
+  }
+
+  leaderboardData.sort((a, b) => b.score - a.score);
+
+  renderTable(leaderboardData);
+  renderChampionCard(leaderboardData);
+}
 
   // MATHEMATICAL ENGINE: Averaging by Total Votes
   let leaderboardData = adminProjects.map(project => {
