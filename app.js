@@ -113,21 +113,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // 1. Dynamic UI Binding
-  const judgeDisplay = document.querySelector('.nav-judge') || document.getElementById('judge-id');
-  if (judgeDisplay) {
-    judgeDisplay.textContent = session.user.email.split('@')[0].toUpperCase();
-  }
-
-  const activeCategory = JUDGE_DIRECTORY[session.user.email];
-  
   window.ACTIVE_USER_EMAIL = session.user.email;
- const activeCategory = JUDGE_DIRECTORY[session.user.email];
+  const activeCategory = JUDGE_DIRECTORY[session.user.email];
+
+  const judgeElements = document.querySelectorAll('.nav-judge, #judge-id, .judge-id, span, div');
+  judgeElements.forEach(el => {
+    if (el.textContent.trim().toLowerCase() === 'judge_01') {
+      el.textContent = session.user.email.split('@')[0].toUpperCase();
+    }
+  });
 
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
   if (!teamsError && teamsData) {
-    
     const isolatedTeams = teamsData.filter(t => {
       if (activeCategory === 'Entrepreneurship and Innovation') {
         return t.is_innovation === true;
