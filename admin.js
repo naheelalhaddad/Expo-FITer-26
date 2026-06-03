@@ -27,7 +27,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         name: `Team ${t.team_number || 'UNKNOWN'}`,
         category: (t.competition_track || '').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
-        // Utilizes native line breaks for maximum Canvas stability
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
     });
@@ -178,16 +177,12 @@ function renderChampionCard(data) {
   }).join('');
 }
 
-// === VIRTUAL PDF ENGINE (ANTI-CULLING & RTL BUG FIX) ===
 window.exportToPDF = function() {
   const btn = document.querySelector('.btn-export');
   const originalText = btn.textContent;
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
-  // 1. Anti-Culling Wrapper
-  // Positioned exactly on screen (top:0, left:0) to force browser rendering, 
-  // but squeezed into an invisible 1x1 pixel box so it doesn't disrupt your UI.
   const wrapper = document.createElement('div');
   wrapper.style.position = 'absolute';
   wrapper.style.top = '0';
@@ -197,11 +192,10 @@ window.exportToPDF = function() {
   wrapper.style.overflow = 'hidden';
   wrapper.style.zIndex = '-9999';
 
-  // 2. The PDF physical container (strictly bounded to 800px)
   const container = document.createElement('div');
-  container.style.width = '800px';
+  container.style.width = '794px'; 
   container.style.backgroundColor = '#ffffff';
-  container.style.padding = '40px';
+  container.style.padding = '40px'; 
   container.style.boxSizing = 'border-box';
   container.style.fontFamily = 'Arial, sans-serif';
 
@@ -237,8 +231,8 @@ window.exportToPDF = function() {
             <tr>
               <th style="width: 10%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Rank</th>
               <th style="width: 15%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Team ID</th>
-              <th style="width: 60%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: right;">Team Members</th>
-              <th style="width: 15%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
+              <th style="width: 55%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: right;">Team Members</th>
+              <th style="width: 20%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
             </tr>
           </thead>
           <tbody>
@@ -247,17 +241,14 @@ window.exportToPDF = function() {
     top5.forEach((p, i) => {
       const bg = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
       
-      // CRITICAL RTL BYPASS: Notice there is NO "direction: rtl" on this td.
-      // html2canvas tears the table apart if it sees that rule. 
-      // text-align: right is completely safe and properly anchors the Arabic text.
       htmlContent += `
         <tr style="background-color: ${bg};">
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: bold;">#${i + 1}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000;">${p.num}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #000; font-weight: bold; line-height: 1.6;">
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: bold; overflow-wrap: break-word;">#${i + 1}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; overflow-wrap: break-word;">${p.num}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #000; font-weight: bold; line-height: 1.6; overflow-wrap: break-word;">
             ${p.membersList}
           </td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6b1a2a; font-weight: bold;">${p.score}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6b1a2a; font-weight: bold; overflow-wrap: break-word;">${p.score}</td>
         </tr>
       `;
     });
@@ -265,17 +256,16 @@ window.exportToPDF = function() {
     htmlContent += `</tbody></table></div>`;
   });
 
-  // Assemble the DOM structure
   container.innerHTML = htmlContent;
   wrapper.appendChild(container);
   document.body.appendChild(wrapper);
 
   const opt = {
-    margin:       10,
+    margin:       0, 
     filename:     'ExpoFITers_Top5_Results.pdf',
     image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    html2canvas:  { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
+    jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } 
   };
 
   html2pdf().set(opt).from(container).save().then(() => {
