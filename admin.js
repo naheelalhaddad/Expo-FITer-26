@@ -18,17 +18,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  // 1. Fetch Master List & Extract ALL Members
+  // 1. Fetch Master List & Extract ALL Members with Dual-Formatting
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => {
-      // Robust split for both newlines and carriage returns
+      // Split by newline and remove empty lines
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
         category: (t.competition_track || '').trim(),
-        members: studentList.join('، ') || 'Unknown' // Forces all members to display everywhere
+        // Format 1: Comma separated for the small side UI cards
+        membersInline: studentList.join('، ') || 'Unknown',
+        // Format 2: Organized Vertical Bullet List for the Table and PDF
+        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
     });
   }
@@ -109,9 +112,9 @@ function renderDashboard() {
 
     return { 
       num: project.num, 
-      name: project.name, 
       category: project.category, 
-      members: project.members,
+      membersInline: project.membersInline,
+      membersList: project.membersList,
       score: Number(finalScore.toFixed(2)) 
     };
   });
@@ -135,9 +138,11 @@ function renderTable(data) {
     return `<tr>
       <td class="rank">#${index + 1}</td>
       <td>
-        <div style="display:flex; align-items:center;">
-          <span class="avatar-placeholder" style="flex-shrink:0;">${item.members.charAt(0).toUpperCase()}</span> 
-          <span style="white-space:normal; line-height:1.4; padding-right:1rem; direction: rtl; text-align: right; display: block; width: 100%;">${item.members}</span>
+        <div style="display:flex; align-items:flex-start; gap: 1rem;">
+          <span class="avatar-placeholder" style="flex-shrink:0; margin-top: 4px;">${item.membersInline.charAt(0).toUpperCase()}</span> 
+          <div style="white-space:normal; line-height:1.7; direction: rtl; text-align: right; width: 100%; color: rgba(255,255,255,0.95); font-size: 14px;">
+            ${item.membersList}
+          </div>
         </div>
       </td>
       <td>${item.num}</td>
@@ -161,29 +166,45 @@ function renderChampionCard(data) {
     return;
   }
 
-  // Champion card now displays ALL members
-  champName.textContent = data[0].members; 
+  // Inject Inline Format so it doesn't break the vertical card height
+  champName.textContent = data[0].membersInline; 
+  // Shrink font size slightly if the team is very large
+  champName.style.fontSize = data[0].membersInline.length > 40 ? '1.4rem' : '2rem'; 
   champProject.textContent = data[0].num;
 
   runnerUpsContainer.innerHTML = data.slice(1, 4).filter(item => item.score > 0).map((item, index) => {
-    return `<div class="runner-up-item">
-      <div><span class="runner-up-rank">#${index + 2}</span> <span style="color:rgba(255,255,255,0.85);">${item.members}</span></div>
-      <span class="runner-up-score">${item.score}</span>
+    return `<div class="runner-up-item" style="display: flex; gap: 10px; align-items: center;">
+      <div style="display:flex; align-items:center; overflow:hidden;">
+        <span class="runner-up-rank" style="flex-shrink:0;">#${index + 2}</span> 
+        <span style="color:rgba(255,255,255,0.85); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; direction:rtl;" title="${item.membersInline}">
+          ${item.membersInline}
+        </span>
+      </div>
+      <span class="runner-up-score" style="flex-shrink:0;">${item.score}</span>
     </div>`;
   }).join('');
 }
 
-// === CANVAS HTML-TO-PDF ENGINE (VIRTUAL WORKER) ===
+// === CANVAS HTML-TO-PDF ENGINE (RTL & CSS INJECTION FIXED) ===
 window.exportToPDF = function() {
   const btn = document.querySelector('.btn-export');
   const originalText = btn.textContent;
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
-  // 1. Build Virtual HTML String (Bypasses viewport culling crash)
+  // 1. Inject strict CSS Rules to block Dark Mode bleed
   let htmlContent = `
-    <div style="padding: 30px; font-family: 'Arial', sans-serif; background: #ffffff; color: #000000; width: 1000px; margin: 0 auto;">
-      <h1 style="text-align:center; color:#6b1a2a; margin-bottom:40px; font-size:32px;">Expo FITers GP - Official Top 5 Results</h1>
+    <style>
+      #pdf-export-container { background-color: #ffffff !important; color: #000000 !important; font-family: 'Arial', sans-serif !important; }
+      #pdf-export-container h1, #pdf-export-container h2 { color: #6b1a2a !important; }
+      #pdf-export-container table { width: 100% !important; border-collapse: collapse !important; }
+      #pdf-export-container th { background-color: #6b1a2a !important; color: #ffffff !important; padding: 12px 14px !important; border: 1px solid #dddddd !important; text-transform: uppercase !important; font-size: 14px !important; font-weight: bold !important; }
+      #pdf-export-container td { color: #000000 !important; padding: 12px 14px !important; border: 1px solid #dddddd !important; font-size: 14px !important; vertical-align: top !important; }
+      #pdf-export-container tr:nth-child(even) td { background-color: #f8f9fa !important; }
+      #pdf-export-container tr:nth-child(odd) td { background-color: #ffffff !important; }
+    </style>
+    <div id="pdf-export-container" style="padding: 40px; width: 1000px; margin: 0 auto; box-sizing: border-box;">
+      <h1 style="text-align:center; margin-bottom:40px; font-size:28px;">Expo FITers GP - Official Top 5 Results</h1>
   `;
 
   const allScores = adminProjects.map(project => {
@@ -206,23 +227,25 @@ window.exportToPDF = function() {
 
     htmlContent += `
       <div style="page-break-inside: avoid; margin-bottom: 50px;">
-        <h2 style="color:#222; border-bottom:3px solid #6b1a2a; padding-bottom:8px; margin-bottom:20px; font-size:24px;">${title}</h2>
-        <table style="width:100%; border-collapse: collapse; text-align: left; font-size: 16px;">
+        <h2 style="border-bottom:3px solid #6b1a2a; padding-bottom:8px; margin-bottom:20px; font-size:20px;">${title}</h2>
+        <table>
           <thead>
-            <tr style="background-color: #6b1a2a; color: #fff;">
-              <th style="padding: 14px; border: 1px solid #ddd; width: 8%;">Rank</th>
-              <th style="padding: 14px; border: 1px solid #ddd; width: 12%;">Team ID</th>
-              <th style="padding: 14px; border: 1px solid #ddd; width: 68%; text-align: right; direction: rtl;">Team Members</th>
-              <th style="padding: 14px; border: 1px solid #ddd; width: 12%;">Score</th>
+            <tr>
+              <th style="width: 8%; text-align: center !important;">Rank</th>
+              <th style="width: 12%; text-align: center !important;">Team ID</th>
+              <th style="width: 68%; text-align: right !important;">Team Members</th>
+              <th style="width: 12%; text-align: center !important;">Score</th>
             </tr>
           </thead>
           <tbody>
             ${top5.map((p, i) => `
-              <tr style="background-color: ${i % 2 === 0 ? '#fcfcfc' : '#ffffff'};">
-                <td style="padding: 14px; border: 1px solid #ddd; font-weight:bold;">#${i + 1}</td>
-                <td style="padding: 14px; border: 1px solid #ddd;">${p.num}</td>
-                <td style="padding: 14px; border: 1px solid #ddd; direction: rtl; text-align: right; font-weight: 600;">${p.members}</td>
-                <td style="padding: 14px; border: 1px solid #ddd; font-weight:bold; color: #6b1a2a;">${p.score}</td>
+              <tr>
+                <td style="text-align: center !important; font-weight:bold;">#${i + 1}</td>
+                <td style="text-align: center !important;">${p.num}</td>
+                <td style="direction: rtl !important; text-align: right !important; font-weight: 600 !important; line-height: 1.6 !important;">
+                  ${p.membersList}
+                </td>
+                <td style="text-align: center !important; font-weight:bold; color: #6b1a2a !important;">${p.score}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -241,7 +264,6 @@ window.exportToPDF = function() {
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  // 2. Inject string directly into engine memory
   html2pdf().set(opt).from(htmlContent).save().then(() => {
     btn.textContent = originalText;
     btn.disabled = false;
