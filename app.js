@@ -33,56 +33,57 @@ const rangeLabels = [
 
 const TRACK_CRITERIA = {
   'RoboSphere: Robotics & Autonomous Drones': [
-    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
-    { name: 'User Interface & Control Experience', key: 'c2', max: 15 },
-    { name: 'Practical Applicability', key: 'c3', max: 15 },
-    { name: 'Robotics Innovation Level', key: 'c4', max: 15 },
-    { name: 'System Speed & Responsiveness', key: 'c5', max: 10 },
-    { name: 'Hardware Integration & Electronics', key: 'c6', max: 10 },
-    { name: 'Autonomous Capabilities', key: 'c7', max: 10 },
-    { name: 'Performance & Accuracy', key: 'c8', max: 10 }
+    { name: 'Presentation & Q&A Quality', sub: 'Robot design understanding, technical explanation', key: 'c1', max: 15 },
+    { name: 'User Interface & Control Experience', sub: 'Control panel, monitoring, ease of use', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', sub: 'Industrial, medical, agricultural, educational use', key: 'c3', max: 15 },
+    { name: 'Robotics Innovation Level', sub: 'Novel mechanisms, AI integration, unique solutions', key: 'c4', max: 15 },
+    { name: 'System Speed & Responsiveness', sub: 'Real-time response and control accuracy', key: 'c5', max: 10 },
+    { name: 'Hardware Integration & Electronics', sub: 'Sensors, actuators, embedded systems', key: 'c6', max: 10 },
+    { name: 'Autonomous Capabilities', sub: 'Navigation, obstacle avoidance, decision making', key: 'c7', max: 10 },
+    { name: 'Performance & Accuracy', sub: 'Stability, precision, mission success rate', key: 'c8', max: 10 }
   ],
   'Intelligence Frontier: AI & Machine Learning': [
-    { name: 'Presentation and Q&A Quality', key: 'c1', max: 15 },
-    { name: 'User Interface & Experience', key: 'c2', max: 15 },
-    { name: 'Use of Modern AI/ML Technologies', key: 'c3', max: 15 },
-    { name: 'Model Accuracy & Performance', key: 'c4', max: 15 },
-    { name: 'AI Innovation Level', key: 'c5', max: 15 },
-    { name: 'Practical Applicability', key: 'c6', max: 10 },
-    { name: 'Data Quality and Processing', key: 'c7', max: 10 },
-    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+    { name: 'Presentation and Q&A Quality', sub: 'Clear explanation, correct answers, strong understanding', key: 'c1', max: 15 },
+    { name: 'User Interface & Experience', sub: 'Modern interface, cloud + database integration', key: 'c2', max: 15 },
+    { name: 'Use of Modern AI/ML Technologies', sub: 'Uses latest models or explains why not', key: 'c3', max: 15 },
+    { name: 'Model Accuracy & Performance', sub: 'High accuracy, reliable and correct predictions', key: 'c4', max: 15 },
+    { name: 'AI Innovation Level', sub: 'Strong ensemble models or advanced ML methods, solving real limitations', key: 'c5', max: 15 },
+    { name: 'Practical Applicability', sub: 'Useful real-world solution (e.g., smart pricing, industry use)', key: 'c6', max: 10 },
+    { name: 'Data Quality and Processing', sub: 'Good dataset, clean, correct preprocessing, well-structured data', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', sub: 'Fast, real-time, optimized, smooth performance under load', key: 'c8', max: 5 }
   ],
   'CloudVerse: Smart IoT & Cloud Technologies': [
-    { name: 'Use of Modern Technologies', key: 'c1', max: 20 },
-    { name: 'Presentation & Q&A Quality', key: 'c2', max: 15 },
-    { name: 'User Interface & Experience', key: 'c3', max: 15 },
-    { name: 'Innovation Level', key: 'c4', max: 15 },
-    { name: 'Practical Applicability', key: 'c5', max: 10 },
-    { name: 'Hardware & Device Integration', key: 'c6', max: 10 },
-    { name: 'Cloud Infrastructure & Data Management', key: 'c7', max: 10 },
-    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+    { name: 'Use of Modern Technologies', sub: 'EEG, wearable devices, smart sensors, computer vision, edge computing, AI/ML', key: 'c1', max: 20 },
+    { name: 'Presentation & Q&A Quality', sub: 'Clear explanation, correct answers, strong understanding of the complete system', key: 'c2', max: 15 },
+    { name: 'User Interface & Experience', sub: 'Professional mobile/web application, dashboard quality, usability, visual design', key: 'c3', max: 15 },
+    { name: 'Innovation Level', sub: 'Creative architecture, unique idea, integration of multiple technologies', key: 'c4', max: 15 },
+    { name: 'Practical Applicability', sub: 'Real-world usefulness, industrial, healthcare, smart city, agriculture, education', key: 'c5', max: 10 },
+    { name: 'Hardware & Device Integration', sub: 'Sensors, actuators, embedded systems, communication protocols, reliability', key: 'c6', max: 10 },
+    { name: 'Cloud Infrastructure & Data Management', sub: 'Cloud services, databases, APIs, scalability, data handling', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', sub: 'Real-time monitoring, fast communication, smooth operation', key: 'c8', max: 5 }
   ],
   'CyberShield: Future of Cybersecurity': [
-    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
-    { name: 'User Interface & Experience', key: 'c2', max: 15 },
-    { name: 'Practical Applicability', key: 'c3', max: 15 },
-    { name: 'Cybersecurity Innovation Level', key: 'c4', max: 15 },
-    { name: 'System Speed & Responsiveness', key: 'c5', max: 10 },
-    { name: 'Security Analysis & Threat Detection', key: 'c6', max: 10 },
-    { name: 'Use of Modern Cybersecurity Tech', key: 'c7', max: 10 },
-    { name: 'Effectiveness & Accuracy', key: 'c8', max: 10 }
+    { name: 'Presentation & Q&A Quality', sub: 'Security concepts explained clearly', key: 'c1', max: 15 },
+    { name: 'User Interface & Experience', sub: 'Dashboard, monitoring, reporting tools', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', sub: 'Real-world cybersecurity relevance', key: 'c3', max: 15 },
+    { name: 'Cybersecurity Innovation Level', sub: 'Novel defense mechanisms, advanced protection methods', key: 'c4', max: 15 },
+    { name: 'System Speed & Responsiveness', sub: 'Detection and response efficiency', key: 'c5', max: 10 },
+    { name: 'Security Analysis & Threat Detection', sub: 'Vulnerability assessment, attack detection', key: 'c6', max: 10 },
+    { name: 'Use of Modern Cybersecurity Tech', sub: 'AI security, SIEM, Zero Trust, blockchain security', key: 'c7', max: 10 },
+    { name: 'Effectiveness & Accuracy', sub: 'Detection accuracy, false-positive reduction, protection level', key: 'c8', max: 10 }
   ],
   'Digital Horizons: Web & Mobile Innovation': [
-    { name: 'Presentation & Q&A Quality', key: 'c1', max: 15 },
-    { name: 'UI/UX & Design Quality', key: 'c2', max: 15 },
-    { name: 'Practical Applicability', key: 'c3', max: 15 },
-    { name: 'AI System Design & Custom API', key: 'c4', max: 15 },
-    { name: 'Problem-Solving Impact & Creativity', key: 'c5', max: 15 },
-    { name: 'Backend, Database & Cloud Integration', key: 'c6', max: 10 },
-    { name: 'Advanced Innovation & Tech Use', key: 'c7', max: 10 },
-    { name: 'System Speed & Responsiveness', key: 'c8', max: 5 }
+    { name: 'Presentation & Q&A Quality', sub: 'Clear explanation, system architecture understanding, strong defense of idea', key: 'c1', max: 15 },
+    { name: 'UI/UX & Design Quality', sub: 'Modern mobile/web design, smooth navigation, 3D UI elements, animations', key: 'c2', max: 15 },
+    { name: 'Practical Applicability', sub: 'Real-world problem solving (fashion, health, education, e-commerce, smart services)', key: 'c3', max: 15 },
+    { name: 'AI System Design & Custom API', sub: 'Building AI logic/API from scratch, training/customizing models, inference pipeline', key: 'c4', max: 15 },
+    { name: 'Problem-Solving Impact & Creativity', sub: 'Modern challenges like fashion AI, smart shopping, health diagnostics, real-time personalization', key: 'c5', max: 15 },
+    { name: 'Backend, Database & Cloud Integration', sub: 'APIs, Firebase/Supabase, real-time databases, scalable architecture', key: 'c6', max: 10 },
+    { name: 'Advanced Innovation & Tech Use', sub: '3D animations, AR/VR concepts, WebGL/Three.js, real-time analytics, smart interfaces', key: 'c7', max: 10 },
+    { name: 'System Speed & Responsiveness', sub: 'Real-time updates, optimized APIs, fast loading, smooth interaction', key: 'c8', max: 5 }
   ]
 };
+
 
 const colorPalette = [
   ['#6b1a2a','#300a12'], ['#4a1020','#1f040b'], ['#8a2236','#400c19'],
@@ -262,16 +263,20 @@ function openEval(idx) {
   document.getElementById('exp-category').textContent = cleanCategory.split(':')[0];
   document.getElementById('exp-members').innerHTML = p.members.map(m => `<div class="member-item"><div class="member-dot"></div>${m}</div>`).join('');
   
-  document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
+    document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
     <div class="criterion">
-      <div class="criterion-header">
-        <span class="criterion-name">${c.name}</span>
-        <span class="criterion-score-display" id="score-${c.key}">${c.max} / ${c.max}</span>
+      <div class="criterion-header" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 12px;">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+          <span class="criterion-name">${c.name}</span>
+          <span class="criterion-score-display" id="score-${c.key}">${c.max} / ${c.max}</span>
+        </div>
+        <span style="font-size: 12px; color: var(--sub); line-height: 1.4;">${c.sub}</span>
       </div>
       <input type="range" min="0" max="${c.max}" value="${c.max}" oninput="updateCriterion('${c.key}', this.value, ${c.max})" ${p.voted ? 'disabled' : ''}/>
       <div class="range-hint"><span>0</span><span>${Math.round(c.max/2)}</span><span>${c.max}</span></div>
     </div>
   `).join('');
+
   
   document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
   const lockedState = document.getElementById('locked-state');
