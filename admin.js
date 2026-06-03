@@ -23,16 +23,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     adminProjects = teamsData.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       
-      // THE INTERCEPTION LOGIC (With Strict Trimming)
-      let trackCategory = (t.competition_track || '').trim();
-      if (t.is_innovation === true) {
+      // تعقيم النصوص بـ Regex لسحق المسافات الوهمية المخفية
+      const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
+      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
+
+      let trackCategory = rawTrack;
+      if (isInnovation) {
         trackCategory = 'Entrepreneurship and Innovation';
       }
 
       return {
         num: (t.team_number || 'UNKNOWN').trim(),
         name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
-        category: trackCategory.trim(), // تم إضافة .trim() هنا لضمان عدم وجود مسافات وهمية
+        category: trackCategory,
         supervisor: (t.supervisor_name || 'Unknown').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
@@ -86,13 +89,13 @@ function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
   if (!tabsContainer) return;
   
-  // استخراج الفئات الفريدة مع ضمان تنظيف المسافات الزائدة مرة أخرى كإجراء احترازي
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allTabs = ['Overall', ...uniqueCategories];
   
   tabsContainer.innerHTML = allTabs.map(cat => {
     const shortName = cat.split(':')[0].trim();
-    return `<div class="tab ${cat === 'Overall' ? 'active' : ''}" onclick="setTab('${cat}', this)">${shortName}</div>`;
+    // استخدام data-cat للحماية من أي أخطاء في الـ Quotes
+    return `<div class="tab ${cat === 'Overall' ? 'active' : ''}" data-cat="${cat.replace(/"/g, '&quot;')}" onclick="setTab(this.dataset.cat, this)">${shortName}</div>`;
   }).join('');
 }
 
@@ -124,8 +127,7 @@ function renderDashboard() {
   });
 
   if (currentCategory !== 'Overall') {
-    // مطابقة المسار بدقة مع تجاهل المسافات
-    leaderboardData = leaderboardData.filter(p => p.category.trim() === currentCategory.trim());
+    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
   }
 
   leaderboardData.sort((a, b) => b.score - a.score);
@@ -199,7 +201,7 @@ window.showTopResultsModal = function() {
     return { ...project, score: Number(finalScore.toFixed(2)) };
   });
 
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
   let modalContent = `
@@ -213,7 +215,6 @@ window.showTopResultsModal = function() {
       .track-container { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
       .track-title { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--maroon, #c31e2d); text-transform: uppercase; letter-spacing: 1px; margin: 0; }
       
-      /* Desktop Grid Layout */
       .result-card { border-radius: 12px; padding: 1.25rem; display: grid; grid-template-columns: 60px 1fr 80px; gap: 1.5rem; align-items: center; }
       .result-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; font-weight: 900; text-align: center; line-height: 1; }
       .result-score { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 700; color: #fff; text-align: right; }
@@ -222,7 +223,6 @@ window.showTopResultsModal = function() {
       .result-supervisor { font-size: 12px; color: rgba(255,255,255,0.5); direction: rtl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .result-members { font-size: 15px; color: rgba(255,255,255,0.9); direction: rtl; text-align: right; line-height: 1.5; }
 
-      /* Mobile Layout Overrides */
       @media (max-width: 768px) {
         .modal-overlay { padding: 1rem; }
         .modal-container { gap: 1.5rem; padding-bottom: 2rem; }
@@ -249,7 +249,7 @@ window.showTopResultsModal = function() {
   `;
 
   allCategories.forEach((cat) => {
-    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category.trim() === cat.trim());
+    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
     
