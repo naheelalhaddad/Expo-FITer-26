@@ -165,3 +165,74 @@ function renderChampionCard(data) {
     </div>`;
   }).join('');
 }
+window.exportToPDF = function() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // 1. Compile current master scores from the memory cache
+  const allScores = adminProjects.map(project => {
+    const stats = projectStats[project.num];
+    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
+    return { ...project, score: Number(finalScore.toFixed(2)) };
+  });
+
+  // 2. Map all required categories
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
+  const allCategories = ['Overall', ...uniqueCategories];
+
+  let yPos = 20;
+
+  // Title Header
+  doc.setFontSize(18);
+  doc.setTextColor(107, 26, 42); // Maroon branding
+  doc.text("Expo FITers GP - Official Top 5 Results", 14, yPos);
+  yPos += 12;
+
+  // 3. Loop through categories, slice top 5, and generate tables
+  allCategories.forEach((cat, index) => {
+    // Filter and Sort
+    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
+    catProjects.sort((a, b) => b.score - a.score);
+    const top5 = catProjects.slice(0, 5);
+
+    if (top5.length === 0) return;
+
+    // Check pagination buffer
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Category Header
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.text(cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`, 14, yPos);
+    yPos += 4;
+
+    // Compile Table Data Matrix
+    const tableData = top5.map((p, i) => [
+      `#${i + 1}`,
+      p.num,
+      p.lead,
+      p.score.toString()
+    ]);
+
+    // Inject Vector Table
+    doc.autoTable({
+      startY: yPos,
+      head: [['Rank', 'Team ID', 'Project Lead', 'Final Score']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [107, 26, 42], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 4 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: 14, right: 14 }
+    });
+
+    // Advance Y position dynamically based on the rendered table height
+    yPos = doc.lastAutoTable.finalY + 15;
+  });
+
+  // 4. Force File Download
+  doc.save('ExpoFITers_Top5_Results.pdf');
+};
