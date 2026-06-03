@@ -246,10 +246,10 @@ window.exportToPDF = function() {
         <tr style="background-color: ${bg};">
           <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: bold; overflow-wrap: break-word;">#${i + 1}</td>
           <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; overflow-wrap: break-word;">${p.num}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #000; font-weight: bold; line-height: 1.6; overflow-wrap: break-word;">
+          <td dir="rtl" style="padding: 10px; border: 1px solid #ddd; text-align: right; direction: rtl; color: #000; font-weight: bold; line-height: 1.6; overflow-wrap: break-word;">
             ${p.membersList}
           </td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: 600; direction: rtl; overflow-wrap: break-word;">${p.supervisor}</td>
+          <td dir="rtl" style="padding: 10px; border: 1px solid #ddd; text-align: center; direction: rtl; color: #000; font-weight: 600; overflow-wrap: break-word;">${p.supervisor}</td>
           <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6b1a2a; font-weight: bold; overflow-wrap: break-word;">${p.score}</td>
         </tr>
       `;
@@ -281,4 +281,5 @@ window.exportToPDF = function() {
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
+
 
