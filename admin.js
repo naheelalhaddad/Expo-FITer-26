@@ -188,15 +188,12 @@ window.exportToPDF = function() {
 
   const wrapper = document.createElement('div');
   wrapper.style.position = 'absolute';
-  wrapper.style.top = '0';
-  wrapper.style.left = '0';
-  wrapper.style.width = '1px';
-  wrapper.style.height = '1px';
-  wrapper.style.overflow = 'hidden';
-  wrapper.style.zIndex = '-9999';
+  wrapper.style.top = '-9999px';
+  wrapper.style.left = '-9999px';
+  wrapper.style.width = '794px';
 
   const container = document.createElement('div');
-  container.style.width = '794px'; 
+  container.style.width = '100%'; 
   container.style.backgroundColor = '#ffffff';
   container.style.padding = '40px'; 
   container.style.boxSizing = 'border-box';
@@ -229,7 +226,7 @@ window.exportToPDF = function() {
     htmlContent += `
       <div style="margin-bottom: 40px; page-break-inside: avoid;">
         <h2 style="color:#222; border-bottom:3px solid #6b1a2a; padding-bottom:5px; margin-bottom:15px; font-size:18px;">${title}</h2>
-        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+        <table style="width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed;">
           <thead>
             <tr>
               <th style="width: 8%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Rank</th>
@@ -273,7 +270,7 @@ window.exportToPDF = function() {
     jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } 
   };
 
-  html2pdf().set(opt).from(container).save().then(() => {
+  html2pdf().set(opt).from(wrapper).save().then(() => {
     document.body.removeChild(wrapper);
     btn.textContent = originalText;
     btn.disabled = false;
@@ -284,3 +281,4 @@ window.exportToPDF = function() {
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
+
