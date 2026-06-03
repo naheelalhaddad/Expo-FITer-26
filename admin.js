@@ -256,7 +256,7 @@ window.exportToPDF = function() {
     margin:       10,
     filename:     'ExpoFITers_Top5_Results.pdf',
     image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 2, useCORS: true, windowWidth: 790 }, // Binds the rendering engine to exactly 790px (750px container + 40px padding)
+    html2canvas:  { scale: 2, useCORS: true, windowWidth: 725 }, // Binds the rendering engine to exactly 790px (750px container + 40px padding)
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
