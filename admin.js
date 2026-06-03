@@ -27,7 +27,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         name: `Team ${t.team_number || 'UNKNOWN'}`,
         category: (t.competition_track || '').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
-        membersList: studentList.map(s => `<div style="margin-bottom: 4px; display: block;">• ${s}</div>`).join('') || 'Unknown' 
+        // Utilizes native line breaks for maximum Canvas stability
+        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
     });
   }
@@ -177,15 +178,37 @@ function renderChampionCard(data) {
   }).join('');
 }
 
+// === VIRTUAL PDF ENGINE (ANTI-CULLING & RTL BUG FIX) ===
 window.exportToPDF = function() {
   const btn = document.querySelector('.btn-export');
   const originalText = btn.textContent;
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
+  // 1. Anti-Culling Wrapper
+  // Positioned exactly on screen (top:0, left:0) to force browser rendering, 
+  // but squeezed into an invisible 1x1 pixel box so it doesn't disrupt your UI.
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'absolute';
+  wrapper.style.top = '0';
+  wrapper.style.left = '0';
+  wrapper.style.width = '1px';
+  wrapper.style.height = '1px';
+  wrapper.style.overflow = 'hidden';
+  wrapper.style.zIndex = '-9999';
+
+  // 2. The PDF physical container (strictly bounded to 800px)
+  const container = document.createElement('div');
+  container.style.width = '800px';
+  container.style.backgroundColor = '#ffffff';
+  container.style.padding = '40px';
+  container.style.boxSizing = 'border-box';
+  container.style.fontFamily = 'Arial, sans-serif';
+
   let htmlContent = `
-    <div style="width: 760px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background: #ffffff;">
-      <h1 style="text-align: center; color: #6b1a2a; font-size: 26px; margin-bottom: 30px; text-transform: uppercase;">Expo FITers GP - Official Top 5 Results</h1>
+    <h1 style="text-align:center; color:#6b1a2a; margin-bottom:30px; font-size:26px; text-transform:uppercase;">
+      Expo FITers GP - Official Top 5 Results
+    </h1>
   `;
 
   const allScores = adminProjects.map(project => {
@@ -197,7 +220,7 @@ window.exportToPDF = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
-  allCategories.forEach(cat => {
+  allCategories.forEach((cat) => {
     let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
     const top5 = catProjects.slice(0, 5);
@@ -207,57 +230,62 @@ window.exportToPDF = function() {
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`;
 
     htmlContent += `
-      <div style="page-break-inside: avoid; margin-bottom: 40px;">
-        <h2 style="color: #222222; border-bottom: 3px solid #6b1a2a; padding-bottom: 8px; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">${title}</h2>
-        <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+      <div style="margin-bottom: 40px; page-break-inside: avoid;">
+        <h2 style="color:#222; border-bottom:3px solid #6b1a2a; padding-bottom:5px; margin-bottom:15px; font-size:18px;">${title}</h2>
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
           <thead>
             <tr>
-              <th style="width: 10%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Rank</th>
-              <th style="width: 15%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Team ID</th>
-              <th style="width: 60%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: right; font-weight: bold;">Team Members</th>
-              <th style="width: 15%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Score</th>
+              <th style="width: 10%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Rank</th>
+              <th style="width: 15%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Team ID</th>
+              <th style="width: 60%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: right;">Team Members</th>
+              <th style="width: 15%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
             </tr>
           </thead>
           <tbody>
     `;
 
     top5.forEach((p, i) => {
-      const bg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+      const bg = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
+      
+      // CRITICAL RTL BYPASS: Notice there is NO "direction: rtl" on this td.
+      // html2canvas tears the table apart if it sees that rule. 
+      // text-align: right is completely safe and properly anchors the Arabic text.
       htmlContent += `
         <tr style="background-color: ${bg};">
-          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #000000; font-weight: bold; vertical-align: top;">#${i + 1}</td>
-          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #000000; vertical-align: top;">${p.num}</td>
-          <td style="padding: 12px; border: 1px solid #dddddd; text-align: right; color: #000000; font-weight: bold; direction: rtl; vertical-align: top; line-height: 1.6;">
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: bold;">#${i + 1}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000;">${p.num}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #000; font-weight: bold; line-height: 1.6;">
             ${p.membersList}
           </td>
-          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #6b1a2a; font-weight: bold; vertical-align: top;">${p.score}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6b1a2a; font-weight: bold;">${p.score}</td>
         </tr>
       `;
     });
 
-    htmlContent += `
-          </tbody>
-        </table>
-      </div>
-    `;
+    htmlContent += `</tbody></table></div>`;
   });
 
-  htmlContent += `</div>`;
+  // Assemble the DOM structure
+  container.innerHTML = htmlContent;
+  wrapper.appendChild(container);
+  document.body.appendChild(wrapper);
 
   const opt = {
-    margin: 10,
-    filename: 'ExpoFITers_Top5_Results.pdf',
-    image: { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    margin:       10,
+    filename:     'ExpoFITers_Top5_Results.pdf',
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(htmlContent).save().then(() => {
+  html2pdf().set(opt).from(container).save().then(() => {
+    document.body.removeChild(wrapper);
     btn.textContent = originalText;
     btn.disabled = false;
   }).catch(err => {
     console.error("PDF Export Error: ", err);
     btn.textContent = "ERROR - TRY AGAIN";
+    document.body.removeChild(wrapper);
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
