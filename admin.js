@@ -193,13 +193,51 @@ window.showTopResultsModal = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
+  // Injecting Responsive CSS directly into the modal for mobile optimization
   let modalContent = `
-    <div id="results-overlay" style="position: fixed; inset: 0; z-index: 9999; background: rgba(10,6,8,0.95); backdrop-filter: blur(16px); overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif;">
-      <div style="width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 3rem; padding-bottom: 4rem;">
+    <style id="modal-mobile-styles">
+      .modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(10,6,8,0.95); backdrop-filter: blur(16px); overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif; }
+      .modal-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 3rem; padding-bottom: 4rem; }
+      .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+      .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; text-transform: uppercase; color: #fff; margin: 0; }
+      .modal-close-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-transform: uppercase; transition: all 0.2s ease; }
+      .modal-close-btn:hover { background: rgba(255,255,255,0.1); }
+      .track-container { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+      .track-title { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--maroon, #c31e2d); text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+      
+      /* Desktop Grid Layout */
+      .result-card { border-radius: 12px; padding: 1.25rem; display: grid; grid-template-columns: 60px 1fr 80px; gap: 1.5rem; align-items: center; }
+      .result-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; font-weight: 900; text-align: center; line-height: 1; }
+      .result-score { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 700; color: #fff; text-align: right; }
+      .result-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .result-team-id { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #fff; flex-shrink: 0; }
+      .result-supervisor { font-size: 12px; color: rgba(255,255,255,0.5); direction: rtl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .result-members { font-size: 15px; color: rgba(255,255,255,0.9); direction: rtl; text-align: right; line-height: 1.5; }
+
+      /* Mobile Layout Overrides */
+      @media (max-width: 768px) {
+        .modal-overlay { padding: 1rem; }
+        .modal-container { gap: 1.5rem; padding-bottom: 2rem; }
+        .modal-title { font-size: 1.8rem; }
+        .track-container { padding: 1rem; }
+        .track-title { font-size: 12px; }
+        .result-card { grid-template-columns: 35px 1fr 60px; gap: 1rem; padding: 1rem; }
+        .result-rank { font-size: 1.6rem; }
+        .result-score { font-size: 1.6rem; }
         
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
-          <h1 style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; text-transform: uppercase; color: #fff; margin: 0;">Official Top 3 Results</h1>
-          <button onclick="document.getElementById('results-overlay').remove()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-transform: uppercase; transition: all 0.2s ease;">Close</button>
+        /* Stacks the Team ID and Supervisor vertically on phones to save horizontal space */
+        .result-meta { flex-direction: column; align-items: flex-end; gap: 4px; }
+        .result-team-id { font-size: 12px; order: 2; }
+        .result-supervisor { font-size: 11px; order: 1; white-space: normal; text-align: right;}
+        .result-members { font-size: 13px; line-height: 1.4; }
+      }
+    </style>
+    
+    <div id="results-overlay" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h1 class="modal-title">Official Top 3 Results</h1>
+          <button onclick="document.getElementById('results-overlay').remove()" class="modal-close-btn">Close</button>
         </div>
   `;
 
@@ -213,24 +251,28 @@ window.showTopResultsModal = function() {
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS — OVERALL' : `TRACK: ${cat}`;
 
     modalContent += `
-      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-        <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--maroon, #c31e2d); text-transform: uppercase; letter-spacing: 1px; margin: 0;">${title}</h2>
+      <div class="track-container">
+        <h2 class="track-title">${title}</h2>
         <div style="display: flex; flex-direction: column; gap: 10px;">
     `;
 
     top3.forEach((p, i) => {
       const isGold = i === 0;
+      const bg = isGold ? 'linear-gradient(90deg, rgba(107,26,42,0.6) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.03)';
+      const border = isGold ? '1px solid rgba(195,30,45,0.4)' : '1px solid rgba(255,255,255,0.05)';
+      const rankColor = isGold ? '#fff' : 'rgba(255,255,255,0.5)';
+
       modalContent += `
-          <div style="background: ${isGold ? 'linear-gradient(90deg, rgba(107,26,42,0.6) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isGold ? 'rgba(195,30,45,0.4)' : 'rgba(255,255,255,0.05)'}; border-radius: 12px; padding: 1.25rem; display: grid; grid-template-columns: 60px 1fr 100px; gap: 1.5rem; align-items: center;">
-            <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; font-weight: 900; color: ${isGold ? '#fff' : 'rgba(255,255,255,0.5)'}; text-align: center; line-height: 1;">#${i + 1}</div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #fff;">${p.num}</span>
-                <span style="font-size: 12px; color: rgba(255,255,255,0.5); direction: rtl;">${p.supervisor}</span>
+          <div class="result-card" style="background: ${bg}; border: ${border};">
+            <div class="result-rank" style="color: ${rankColor};">#${i + 1}</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+              <div class="result-meta">
+                <span class="result-team-id">${p.num}</span>
+                <span class="result-supervisor">${p.supervisor}</span>
               </div>
-              <div style="font-size: 15px; color: rgba(255,255,255,0.9); direction: rtl; text-align: right; line-height: 1.5;">${p.membersInline}</div>
+              <div class="result-members">${p.membersInline}</div>
             </div>
-            <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; text-align: right;">${p.score}</div>
+            <div class="result-score">${p.score}</div>
           </div>
       `;
     });
@@ -248,3 +290,4 @@ window.showTopResultsModal = function() {
 
   document.body.insertAdjacentHTML('beforeend', modalContent);
 };
+
