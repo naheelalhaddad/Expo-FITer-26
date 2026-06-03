@@ -18,30 +18,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
-  if (!teamsError && teamsData) {
-    adminProjects = teamsData.map(t => {
-      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
-      
-      // تعقيم النصوص بـ Regex لسحق المسافات الوهمية المخفية
-      const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
-      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
+ const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
+if (!teamsError && teamsData) {
+  adminProjects = teamsData.map(t => {
+    const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+    const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
+    const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
 
-      let trackCategory = rawTrack;
-      if (isInnovation) {
-        trackCategory = 'Entrepreneurship and Innovation';
-      }
+    let trackCategory = rawTrack;
+    if (isInnovation) {
+      trackCategory = 'Entrepreneurship and Innovation';
+    }
 
-      return {
-        num: (t.team_number || 'UNKNOWN').trim(),
-        name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
-        category: trackCategory,
-        supervisor: (t.supervisor_name || 'Unknown').trim(),
-        membersInline: studentList.join('، ') || 'Unknown',
-        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
-      };
-    });
-  }
+    return {
+      num: (t.team_number || 'UNKNOWN').trim(),
+      name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
+      category: trackCategory,
+      supervisor: (t.supervisor_name || 'Unknown').trim(),
+      membersInline: studentList.join('، ') || 'Unknown',
+      membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown'
+    };
+  });
+
+  // Deduplication: if a team appears twice, keep the innovation-flagged version
+  const seen = new Map();
+  adminProjects.forEach(p => {
+    if (!seen.has(p.num) || p.category === 'Entrepreneurship and Innovation') {
+      seen.set(p.num, p);
+    }
+  });
+  adminProjects = [...seen.values()];
+}
 
   generateTabs();
 
