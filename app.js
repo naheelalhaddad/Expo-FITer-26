@@ -126,21 +126,30 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
   if (!teamsError && teamsData) {
+    
+    // التنظيف الصارم للمسار النشط
+    const activeCatClean = activeCategory.replace(/\s+/g, ' ').trim();
+
     const isolatedTeams = teamsData.filter(t => {
-      if (activeCategory === 'Entrepreneurship and Innovation') {
-        return t.is_innovation === true;
+      // قراءة صارمة للمتغير سواء كان Boolean أو String
+      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
+      // تنظيف صارم لمسار البيانات من الـ Database للتخلص من المسافات الوهمية
+      const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
+
+      if (activeCatClean === 'Entrepreneurship and Innovation') {
+        return isInnovation;
       } else {
-        return (t.competition_track || '').trim() === activeCategory && t.is_innovation !== true;
+        return rawTrack === activeCatClean && !isInnovation;
       }
     });
 
     projects = isolatedTeams.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       return {
-        num: t.team_number || 'UNKNOWN',
-        name: `Team ${t.team_number || 'UNKNOWN'}`,
-        category: activeCategory,
-        supervisor: t.supervisor_name || 'Unknown',
+        num: (t.team_number || 'UNKNOWN').trim(),
+        name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
+        category: activeCatClean,
+        supervisor: (t.supervisor_name || 'Unknown').trim(),
         members: studentList,
         abstract: t.project_abstract || 'No abstract provided.',
         colors: ['#c31e2d', '#6b1a2a'],
