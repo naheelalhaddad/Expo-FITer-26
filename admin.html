@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="admin-layout">
 
@@ -28,6 +30,7 @@
       </div>
     </div>
     <div class="nav-right">
+      <button class="btn-export" onclick="exportToPDF()">Export Top 5 PDF</button>
       <span class="nav-judge">SECURE ADMIN CONNECTION</span>
     </div>
   </div>
