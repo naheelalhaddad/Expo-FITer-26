@@ -186,23 +186,16 @@ window.exportToPDF = function() {
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'absolute';
-  wrapper.style.top = '-9999px';
-  wrapper.style.left = '-9999px';
-  wrapper.style.width = '794px';
-
   const container = document.createElement('div');
-  container.style.width = '100%'; 
-  container.style.backgroundColor = '#ffffff';
-  container.style.padding = '40px'; 
-  container.style.boxSizing = 'border-box';
-  container.style.fontFamily = 'Arial, sans-serif';
-
-  let htmlContent = `
-    <h1 style="text-align:center; color:#6b1a2a; margin-bottom:30px; font-size:26px; text-transform:uppercase;">
-      Expo FITers GP - Official Top 5 Results
-    </h1>
+  container.style.cssText = `
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 794px;
+    background-color: #ffffff;
+    padding: 40px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
   `;
 
   const allScores = adminProjects.map(project => {
@@ -214,43 +207,99 @@ window.exportToPDF = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
+  let htmlContent = `
+    <h1 style="
+      text-align: center;
+      color: #6b1a2a;
+      margin: 0 0 30px 0;
+      font-size: 24px;
+      text-transform: uppercase;
+      font-family: Arial, sans-serif;
+    ">Expo FITers GP — Official Top 3 Results</h1>
+  `;
+
   allCategories.forEach((cat) => {
     let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
-    const top5 = catProjects.slice(0, 5);
+    const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
 
-    if (top5.length === 0) return;
+    if (top3.length === 0) return;
 
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`;
 
     htmlContent += `
-      <div style="margin-bottom: 40px; page-break-inside: avoid;">
-        <h2 style="color:#222; border-bottom:3px solid #6b1a2a; padding-bottom:5px; margin-bottom:15px; font-size:18px;">${title}</h2>
-        <table style="width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed;">
+      <div style="margin-bottom: 36px; page-break-inside: avoid;">
+        <h2 style="
+          color: #222;
+          border-bottom: 3px solid #6b1a2a;
+          padding-bottom: 5px;
+          margin: 0 0 14px 0;
+          font-size: 16px;
+          font-family: Arial, sans-serif;
+        ">${title}</h2>
+        <table style="
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+        ">
+          <colgroup>
+            <col style="width: 7%;" />
+            <col style="width: 10%;" />
+            <col style="width: 48%;" />
+            <col style="width: 22%;" />
+            <col style="width: 13%;" />
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 8%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Rank</th>
-              <th style="width: 12%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Team ID</th>
-              <th style="width: 45%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: right;">Team Members</th>
-              <th style="width: 20%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Supervisor</th>
-              <th style="width: 15%; background-color: #6b1a2a; color: white; padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
+              <th style="${thStyle()}text-align: center;">Rank</th>
+              <th style="${thStyle()}text-align: center;">Team ID</th>
+              <th style="${thStyle()}text-align: center;">Team Members</th>
+              <th style="${thStyle()}text-align: center;">Supervisor</th>
+              <th style="${thStyle()}text-align: center;">Score</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    top5.forEach((p, i) => {
+    top3.forEach((p, i) => {
       const bg = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
-      
+      const members = (p.students || p.membersInline || '')
+        .split('،')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const membersCellContent = members.length > 0
+        ? members.map(m => `
+            <div style="
+              direction: rtl;
+              unicode-bidi: bidi-override;
+              text-align: right;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.7;
+              color: #000;
+            ">${m}</div>
+          `).join('')
+        : `<div style="direction:rtl;text-align:right;font-family:Arial,sans-serif;font-size:12px;">${p.membersInline}</div>`;
+
+      const supervisorContent = `
+        <div style="
+          direction: rtl;
+          unicode-bidi: bidi-override;
+          text-align: center;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          color: #000;
+        ">${p.supervisor}</div>
+      `;
+
       htmlContent += `
         <tr style="background-color: ${bg};">
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; font-weight: bold; overflow-wrap: break-word;">#${i + 1}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #000; overflow-wrap: break-word;">${p.num}</td>
-          <td dir="rtl" style="padding: 10px; border: 1px solid #ddd; text-align: right; direction: rtl; color: #000; font-weight: bold; line-height: 1.6; overflow-wrap: break-word;">
-            ${p.membersList}
-          </td>
-          <td dir="rtl" style="padding: 10px; border: 1px solid #ddd; text-align: center; direction: rtl; color: #000; font-weight: 600; overflow-wrap: break-word;">${p.supervisor}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #6b1a2a; font-weight: bold; overflow-wrap: break-word;">${p.score}</td>
+          <td style="${tdStyle()}text-align:center; font-weight:bold; color:#6b1a2a; font-size:14px;">#${i + 1}</td>
+          <td style="${tdStyle()}text-align:center; color:#000;">${p.num}</td>
+          <td style="${tdStyle()}padding:8px 10px;">${membersCellContent}</td>
+          <td style="${tdStyle()}padding:8px 6px;">${supervisorContent}</td>
+          <td style="${tdStyle()}text-align:center; font-weight:bold; color:#6b1a2a; font-size:14px;">${p.score}</td>
         </tr>
       `;
     });
@@ -259,27 +308,47 @@ window.exportToPDF = function() {
   });
 
   container.innerHTML = htmlContent;
-  wrapper.appendChild(container);
-  document.body.appendChild(wrapper);
+  document.body.appendChild(container);
 
   const opt = {
-    margin:       0, 
-    filename:     'ExpoFITers_Top5_Results.pdf',
-    image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
-    jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } 
+    margin:      0,
+    filename:    'ExpoFITers_Top3_Results.pdf',
+    image:       { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794, logging: false },
+    jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(wrapper).save().then(() => {
-    document.body.removeChild(wrapper);
+  html2pdf().set(opt).from(container).save().then(() => {
+    document.body.removeChild(container);
     btn.textContent = originalText;
     btn.disabled = false;
   }).catch(err => {
-    console.error("PDF Export Error: ", err);
+    console.error("PDF Export Error:", err);
+    document.body.removeChild(container);
     btn.textContent = "ERROR - TRY AGAIN";
-    document.body.removeChild(wrapper);
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
 
+function thStyle() {
+  return `
+    background-color: #6b1a2a;
+    color: white;
+    padding: 9px 8px;
+    border: 1px solid #ccc;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+  `;
+}
+
+function tdStyle() {
+  return `
+    padding: 8px;
+    border: 1px solid #ddd;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    vertical-align: top;
+  `;
+}
 
