@@ -180,7 +180,10 @@ function renderChampionCard(data) {
   }).join('');
 }
 
-window.exportToPDF = function() {
+window.showTopResultsModal = function() {
+  const existingOverlay = document.getElementById('results-overlay');
+  if (existingOverlay) existingOverlay.remove();
+
   const allScores = adminProjects.map(project => {
     const stats = projectStats[project.num];
     const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
@@ -190,187 +193,58 @@ window.exportToPDF = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
-  let tablesHTML = '';
+  let modalContent = `
+    <div id="results-overlay" style="position: fixed; inset: 0; z-index: 9999; background: rgba(10,6,8,0.95); backdrop-filter: blur(16px); overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif;">
+      <div style="width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 3rem; padding-bottom: 4rem;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+          <h1 style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; text-transform: uppercase; color: #fff; margin: 0;">Official Top 3 Results</h1>
+          <button onclick="document.getElementById('results-overlay').remove()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-transform: uppercase; transition: all 0.2s ease;">Close</button>
+        </div>
+  `;
 
   allCategories.forEach((cat) => {
     let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
+    
     if (top3.length === 0) return;
 
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS — OVERALL' : `TRACK: ${cat}`;
 
-    const rows = top3.map((p, i) => {
-      const members = p.membersInline
-        .split('،')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .map(m => `<div class="member-name">${m}</div>`)
-        .join('');
+    modalContent += `
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+        <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--maroon, #c31e2d); text-transform: uppercase; letter-spacing: 1px; margin: 0;">${title}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+    `;
 
-      return `
-        <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">
-          <td class="cell-center rank-cell">#${i + 1}</td>
-          <td class="cell-center">${p.num}</td>
-          <td class="cell-rtl members-cell">${members}</td>
-          <td class="cell-rtl">${p.supervisor}</td>
-          <td class="cell-center score-cell">${p.score}</td>
-        </tr>
+    top3.forEach((p, i) => {
+      const isGold = i === 0;
+      modalContent += `
+          <div style="background: ${isGold ? 'linear-gradient(90deg, rgba(107,26,42,0.6) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isGold ? 'rgba(195,30,45,0.4)' : 'rgba(255,255,255,0.05)'}; border-radius: 12px; padding: 1.25rem; display: grid; grid-template-columns: 60px 1fr 100px; gap: 1.5rem; align-items: center;">
+            <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; font-weight: 900; color: ${isGold ? '#fff' : 'rgba(255,255,255,0.5)'}; text-align: center; line-height: 1;">#${i + 1}</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #fff;">${p.num}</span>
+                <span style="font-size: 12px; color: rgba(255,255,255,0.5); direction: rtl;">${p.supervisor}</span>
+              </div>
+              <div style="font-size: 15px; color: rgba(255,255,255,0.9); direction: rtl; text-align: right; line-height: 1.5;">${p.membersInline}</div>
+            </div>
+            <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; text-align: right;">${p.score}</div>
+          </div>
       `;
-    }).join('');
+    });
 
-    tablesHTML += `
-      <div class="section">
-        <h2 class="section-title">${title}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th style="width:7%">Rank</th>
-              <th style="width:10%">Team ID</th>
-              <th style="width:48%">Team Members</th>
-              <th style="width:22%">Supervisor</th>
-              <th style="width:13%">Score</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+    modalContent += `
+        </div>
       </div>
     `;
   });
 
-  const printWindow = window.open('', '_blank', 'width=900,height=700');
+  modalContent += `
+      </div>
+    </div>
+  `;
 
-  printWindow.document.write(`<!DOCTYPE html>
-<html lang="ar" dir="ltr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Expo FITers GP — Top 3 Results</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Cairo', Arial, sans-serif;
-      background: #fff;
-      color: #111;
-      padding: 40px;
-    }
-
-    h1 {
-      text-align: center;
-      color: #6b1a2a;
-      font-size: 22px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 32px;
-      padding-bottom: 12px;
-      border-bottom: 3px solid #6b1a2a;
-    }
-
-    .section {
-      margin-bottom: 36px;
-      page-break-inside: avoid;
-    }
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #6b1a2a;
-      border-bottom: 2px solid #6b1a2a;
-      padding-bottom: 4px;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-    }
-
-    thead tr {
-      background-color: #6b1a2a;
-      color: #fff;
-    }
-
-    th {
-      padding: 9px 8px;
-      font-size: 12px;
-      font-weight: 700;
-      text-align: center;
-      border: 1px solid #a03040;
-    }
-
-    td {
-      padding: 8px;
-      border: 1px solid #ddd;
-      font-size: 12px;
-      vertical-align: middle;
-      overflow-wrap: break-word;
-      word-break: break-word;
-    }
-
-    .row-even { background: #f9f9f9; }
-    .row-odd  { background: #ffffff; }
-
-    .cell-center { text-align: center; }
-
-    .cell-rtl {
-      text-align: right;
-      direction: rtl;
-    }
-
-    .rank-cell {
-      font-weight: 700;
-      color: #6b1a2a;
-      font-size: 15px;
-    }
-
-    .score-cell {
-      font-weight: 700;
-      color: #6b1a2a;
-      font-size: 14px;
-    }
-
-    .members-cell { vertical-align: top; padding: 8px 10px; }
-
-    .member-name {
-      direction: rtl;
-      text-align: right;
-      line-height: 1.8;
-      font-size: 12px;
-    }
-
-    .print-btn {
-      display: block;
-      margin: 0 auto 30px auto;
-      padding: 10px 32px;
-      background: #6b1a2a;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      font-family: 'Cairo', Arial, sans-serif;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 1px;
-    }
-
-    .print-btn:hover { background: #8b2a3a; }
-
-    @media print {
-      .print-btn { display: none; }
-      body { padding: 20px; }
-    }
-  </style>
-</head>
-<body>
-  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-  <h1>Expo FITers GP — Official Top 3 Results</h1>
-  ${tablesHTML}
-</body>
-</html>`);
-
-  printWindow.document.close();
+  document.body.insertAdjacentHTML('beforeend', modalContent);
 };
