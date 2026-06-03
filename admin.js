@@ -3,8 +3,11 @@ const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let rawEvaluations = [];
-let currentCategory = 'Overall';
 let adminProjects = [];
+let currentCategory = 'Overall';
+
+// MEMORY CACHE: Prevents recalculating historical data on every new vote
+let projectStats = {}; 
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -17,35 +20,61 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
+  // 1. Fetch Master List of Teams
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => ({
-      num: t.team_number,
-      name: `Team ${t.team_number}`,
-      category: t.competition_track.trim(),
-      lead: t.students.split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
+      num: t.team_number || 'UNKNOWN',
+      name: `Team ${t.team_number || 'UNKNOWN'}`,
+      category: (t.competition_track || '').trim(),
+      lead: (t.students || '').split('\n').filter(s => s.trim() !== '')[0] || 'Unknown'
     }));
   }
 
   generateTabs();
 
-  const { data: evalsData, error: evalsError } = await supabaseClient.from('evaluations').select('*');
-  if (!evalsError) {
+  // 2. NETWORK OPTIMIZATION: Fetch ONLY required columns, ignoring c1-c8
+  const { data: evalsData, error: evalsError } = await supabaseClient
+    .from('evaluations')
+    .select('project_num, total_score');
+    
+  if (!evalsError && evalsData) {
     rawEvaluations = evalsData;
-    processAndRender();
+    buildInitialCache();
+    renderDashboard();
   }
 
+  // 3. REALTIME OPTIMIZATION: Incremental state updates
   supabaseClient
     .channel('evaluations-channel')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
-        if (Object.keys(payload.new).length > 0) {
-          rawEvaluations.push(payload.new);
-          processAndRender();
+        if (payload.new && payload.new.project_num) {
+          const pNum = payload.new.project_num;
+          const tScore = payload.new.total_score || 0;
+          
+          // O(1) Cache Update
+          if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
+          projectStats[pNum].totalScore += tScore;
+          projectStats[pNum].voteCount += 1;
+          
+          renderDashboard();
         }
       }
     )
     .subscribe();
 });
+
+function buildInitialCache() {
+  projectStats = {};
+  rawEvaluations.forEach(record => {
+    const pNum = record.project_num;
+    const tScore = record.total_score || 0; // Reads generated DB column directly
+    
+    if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
+    projectStats[pNum].totalScore += tScore;
+    projectStats[pNum].voteCount += 1;
+  });
+}
 
 function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
@@ -68,29 +97,11 @@ window.setTab = function(category, element) {
   const label = document.getElementById('champion-category-label');
   const shortName = category.split(':')[0];
   if(label) label.innerHTML = category === 'Overall' ? 'Overall Ranking<br>Grand Champion' : `${shortName} Ranking<br>Category Leader`;
-  processAndRender();
+  
+  renderDashboard();
 };
 
-function processAndRender() {
-  const projectStats = {};
-
-  rawEvaluations.forEach(record => {
-    let evaluationFinalScore = 0;
-
-    for (let i = 1; i <= 8; i++) {
-      const val = record[`criterion_${i}`];
-      if (val !== null && val !== undefined) {
-        evaluationFinalScore += val;
-      }
-    }
-
-    if (!projectStats[record.project_num]) {
-      projectStats[record.project_num] = { totalScore: 0, voteCount: 0 };
-    }
-    projectStats[record.project_num].totalScore += evaluationFinalScore;
-    projectStats[record.project_num].voteCount += 1;
-  });
-
+function renderDashboard() {
   let leaderboardData = adminProjects.map(project => {
     const stats = projectStats[project.num];
     const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
