@@ -18,27 +18,22 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  // 1. Fetch Master List & Extract ALL Members with Dual-Formatting
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => {
-      // Split by newline and remove empty lines
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
         category: (t.competition_track || '').trim(),
-        // Format 1: Comma separated for the small side UI cards
         membersInline: studentList.join('، ') || 'Unknown',
-        // Format 2: Organized Vertical Bullet List for the Table and PDF
-        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
+        membersList: studentList.map(s => `<div style="margin-bottom: 4px; display: block;">• ${s}</div>`).join('') || 'Unknown' 
       };
     });
   }
 
   generateTabs();
 
-  // 2. Fetch Cached Data
   const { data: evalsData, error: evalsError } = await supabaseClient
     .from('evaluations')
     .select('project_num, total_score');
@@ -49,7 +44,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     renderDashboard();
   }
 
-  // 3. Realtime Updates
   supabaseClient
     .channel('evaluations-channel')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
@@ -140,7 +134,7 @@ function renderTable(data) {
       <td>
         <div style="display:flex; align-items:flex-start; gap: 1rem;">
           <span class="avatar-placeholder" style="flex-shrink:0; margin-top: 4px;">${item.membersInline.charAt(0).toUpperCase()}</span> 
-          <div style="white-space:normal; line-height:1.7; direction: rtl; text-align: right; width: 100%; color: rgba(255,255,255,0.95); font-size: 14px;">
+          <div style="line-height:1.7; direction: rtl; text-align: right; width: 100%; color: rgba(255,255,255,0.95); font-size: 14px;">
             ${item.membersList}
           </div>
         </div>
@@ -166,9 +160,7 @@ function renderChampionCard(data) {
     return;
   }
 
-  // Inject Inline Format so it doesn't break the vertical card height
   champName.textContent = data[0].membersInline; 
-  // Shrink font size slightly if the team is very large
   champName.style.fontSize = data[0].membersInline.length > 40 ? '1.4rem' : '2rem'; 
   champProject.textContent = data[0].num;
 
@@ -185,26 +177,30 @@ function renderChampionCard(data) {
   }).join('');
 }
 
-// === CANVAS HTML-TO-PDF ENGINE (RTL & CSS INJECTION FIXED) ===
+// === CANVAS HTML-TO-PDF ENGINE (STRICT LAYOUT ENFORCEMENT) ===
 window.exportToPDF = function() {
   const btn = document.querySelector('.btn-export');
   const originalText = btn.textContent;
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
-  // 1. Inject strict CSS Rules to block Dark Mode bleed
+  // Enforces fixed table geometry and strictly bounds the container to 750px
   let htmlContent = `
     <style>
-      #pdf-export-container { background-color: #ffffff !important; color: #000000 !important; font-family: 'Arial', sans-serif !important; }
-      #pdf-export-container h1, #pdf-export-container h2 { color: #6b1a2a !important; }
-      #pdf-export-container table { width: 100% !important; border-collapse: collapse !important; }
-      #pdf-export-container th { background-color: #6b1a2a !important; color: #ffffff !important; padding: 12px 14px !important; border: 1px solid #dddddd !important; text-transform: uppercase !important; font-size: 14px !important; font-weight: bold !important; }
-      #pdf-export-container td { color: #000000 !important; padding: 12px 14px !important; border: 1px solid #dddddd !important; font-size: 14px !important; vertical-align: top !important; }
-      #pdf-export-container tr:nth-child(even) td { background-color: #f8f9fa !important; }
-      #pdf-export-container tr:nth-child(odd) td { background-color: #ffffff !important; }
+      .pdf-container { width: 750px; padding: 20px; background: #fff; color: #000; font-family: Arial, sans-serif; box-sizing: border-box; margin: 0 auto; }
+      .pdf-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 40px; }
+      .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 12px; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
+      .pdf-table th { background-color: #6b1a2a; color: #fff; font-weight: bold; text-align: center; text-transform: uppercase; }
+      .pdf-table td { color: #000; vertical-align: top; }
+      .pdf-table tr:nth-child(even) td { background-color: #f8f9fa; }
+      
+      .col-rank { width: 10%; }
+      .col-id { width: 15%; }
+      .col-members { width: 60%; }
+      .col-score { width: 15%; }
     </style>
-    <div id="pdf-export-container" style="padding: 40px; width: 1000px; margin: 0 auto; box-sizing: border-box;">
-      <h1 style="text-align:center; margin-bottom:40px; font-size:28px;">Expo FITers GP - Official Top 5 Results</h1>
+    <div class="pdf-container">
+      <h1 style="text-align:center; color:#6b1a2a; margin-bottom:30px; font-size:26px;">Expo FITers GP - Official Top 5 Results</h1>
   `;
 
   const allScores = adminProjects.map(project => {
@@ -226,26 +222,26 @@ window.exportToPDF = function() {
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`;
 
     htmlContent += `
-      <div style="page-break-inside: avoid; margin-bottom: 50px;">
-        <h2 style="border-bottom:3px solid #6b1a2a; padding-bottom:8px; margin-bottom:20px; font-size:20px;">${title}</h2>
-        <table>
+      <div style="page-break-inside: avoid;">
+        <h2 style="color:#222; border-bottom:3px solid #6b1a2a; padding-bottom:5px; margin-bottom:15px; font-size:18px;">${title}</h2>
+        <table class="pdf-table">
           <thead>
             <tr>
-              <th style="width: 8%; text-align: center !important;">Rank</th>
-              <th style="width: 12%; text-align: center !important;">Team ID</th>
-              <th style="width: 68%; text-align: right !important;">Team Members</th>
-              <th style="width: 12%; text-align: center !important;">Score</th>
+              <th class="col-rank">Rank</th>
+              <th class="col-id">Team ID</th>
+              <th class="col-members" style="text-align: right;">Team Members</th>
+              <th class="col-score">Score</th>
             </tr>
           </thead>
           <tbody>
             ${top5.map((p, i) => `
               <tr>
-                <td style="text-align: center !important; font-weight:bold;">#${i + 1}</td>
-                <td style="text-align: center !important;">${p.num}</td>
-                <td style="direction: rtl !important; text-align: right !important; font-weight: 600 !important; line-height: 1.6 !important;">
+                <td style="text-align: center; font-weight: bold;">#${i + 1}</td>
+                <td style="text-align: center;">${p.num}</td>
+                <td style="direction: rtl; text-align: right; font-weight: bold; line-height: 1.6;">
                   ${p.membersList}
                 </td>
-                <td style="text-align: center !important; font-weight:bold; color: #6b1a2a !important;">${p.score}</td>
+                <td style="text-align: center; font-weight: bold; color: #6b1a2a;">${p.score}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -257,10 +253,10 @@ window.exportToPDF = function() {
   htmlContent += `</div>`;
 
   const opt = {
-    margin:       [10, 10, 10, 10],
+    margin:       10,
     filename:     'ExpoFITers_Top5_Results.pdf',
     image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 2, useCORS: true },
+    html2canvas:  { scale: 2, useCORS: true, windowWidth: 790 }, // Binds the rendering engine to exactly 790px (750px container + 40px padding)
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
