@@ -181,23 +181,6 @@ function renderChampionCard(data) {
 }
 
 window.exportToPDF = function() {
-  const btn = document.querySelector('.btn-export');
-  const originalText = btn.textContent;
-  btn.textContent = "GENERATING PDF...";
-  btn.disabled = true;
-
-  const container = document.createElement('div');
-  container.style.cssText = `
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-    width: 794px;
-    background-color: #ffffff;
-    padding: 40px;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-  `;
-
   const allScores = adminProjects.map(project => {
     const stats = projectStats[project.num];
     const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
@@ -207,182 +190,187 @@ window.exportToPDF = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
-  let htmlContent = `
-    <h1 style="
-      text-align: center;
-      color: #6b1a2a;
-      margin: 0 0 30px 0;
-      font-size: 24px;
-      text-transform: uppercase;
-      font-family: Arial, sans-serif;
-    ">Expo FITers GP — Official Top 3 Results</h1>
-  `;
+  let tablesHTML = '';
 
   allCategories.forEach((cat) => {
     let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
-
     if (top3.length === 0) return;
 
-    const title = cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`;
+    const title = cat === 'Overall' ? 'GRAND CHAMPIONS — OVERALL' : `TRACK: ${cat}`;
 
-    htmlContent += `
-      <div style="margin-bottom: 36px; page-break-inside: avoid;">
-        <h2 style="
-          color: #222;
-          border-bottom: 3px solid #6b1a2a;
-          padding-bottom: 5px;
-          margin: 0 0 14px 0;
-          font-size: 16px;
-          font-family: Arial, sans-serif;
-        ">${title}</h2>
-        <table style="
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: fixed;
-        ">
-          <colgroup>
-            <col style="width: 7%;" />
-            <col style="width: 10%;" />
-            <col style="width: 48%;" />
-            <col style="width: 22%;" />
-            <col style="width: 13%;" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th style="${thStyle()}text-align: center;">Rank</th>
-              <th style="${thStyle()}text-align: center;">Team ID</th>
-              <th style="${thStyle()}text-align: center;">Team Members</th>
-              <th style="${thStyle()}text-align: center;">Supervisor</th>
-              <th style="${thStyle()}text-align: center;">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    top3.forEach((p, i) => {
-      const bg = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
-      const members = (p.students || p.membersInline || '')
+    const rows = top3.map((p, i) => {
+      const members = p.membersInline
         .split('،')
         .map(s => s.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(m => `<div class="member-name">${m}</div>`)
+        .join('');
 
-      const membersCellContent = members.length > 0
-        ? members.map(m => `
-            <div style="
-              direction: rtl;
-              unicode-bidi: bidi-override;
-              text-align: right;
-              font-family: Arial, sans-serif;
-              font-size: 12px;
-              line-height: 1.7;
-              color: #000;
-            ">${m}</div>
-          `).join('')
-        : `<div style="direction:rtl;text-align:right;font-family:Arial,sans-serif;font-size:12px;">${p.membersInline}</div>`;
-
-      const supervisorContent = `
-        <div style="
-          direction: rtl;
-          unicode-bidi: bidi-override;
-          text-align: center;
-          font-family: Arial, sans-serif;
-          font-size: 12px;
-          color: #000;
-        ">${p.supervisor}</div>
-      `;
-
-      htmlContent += `
-        <tr style="background-color: ${bg};">
-          <td style="${tdStyle()}text-align:center; font-weight:bold; color:#6b1a2a; font-size:14px;">#${i + 1}</td>
-          <td style="${tdStyle()}text-align:center; color:#000;">${p.num}</td>
-          <td style="${tdStyle()}padding:8px 10px;">${membersCellContent}</td>
-          <td style="${tdStyle()}padding:8px 6px;">${supervisorContent}</td>
-          <td style="${tdStyle()}text-align:center; font-weight:bold; color:#6b1a2a; font-size:14px;">${p.score}</td>
+      return `
+        <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">
+          <td class="cell-center rank-cell">#${i + 1}</td>
+          <td class="cell-center">${p.num}</td>
+          <td class="cell-rtl members-cell">${members}</td>
+          <td class="cell-rtl">${p.supervisor}</td>
+          <td class="cell-center score-cell">${p.score}</td>
         </tr>
       `;
-    });
+    }).join('');
 
-    htmlContent += `</tbody></table></div>`;
+    tablesHTML += `
+      <div class="section">
+        <h2 class="section-title">${title}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:7%">Rank</th>
+              <th style="width:10%">Team ID</th>
+              <th style="width:48%">Team Members</th>
+              <th style="width:22%">Supervisor</th>
+              <th style="width:13%">Score</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
   });
 
-  container.innerHTML = htmlContent;
-  document.body.appendChild(container);
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
 
-    // Give browser one frame to render the injected HTML before capturing
-  requestAnimationFrame(() => {
-    const pageWidth = 794;
-    const pageHeight = 1123;
+  printWindow.document.write(`<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expo FITers GP — Top 3 Results</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    domtoimage.toPng(container, {
-      width: pageWidth,
-      height: container.scrollHeight,
-      style: {
-        transform: 'none',
-        transformOrigin: 'top left',
-        width: pageWidth + 'px'
-      }
-    })
-    .then(dataUrl => {
-      const { jsPDF } = window.jspdf;
-      const imgHeight = container.scrollHeight;
-      const pagesNeeded = Math.ceil(imgHeight / pageHeight);
+    body {
+      font-family: 'Cairo', Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      padding: 40px;
+    }
 
-      const doc = new jsPDF({
-        unit: 'px',
-        format: [pageWidth, pageHeight],
-        orientation: 'portrait'
-      });
+    h1 {
+      text-align: center;
+      color: #6b1a2a;
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 32px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid #6b1a2a;
+    }
 
-      for (let i = 0; i < pagesNeeded; i++) {
-        if (i > 0) doc.addPage([pageWidth, pageHeight], 'portrait');
+    .section {
+      margin-bottom: 36px;
+      page-break-inside: avoid;
+    }
 
-        // Shift the image up by one page height per page
-        doc.addImage(
-          dataUrl,
-          'PNG',
-          0,                    // x
-          -(i * pageHeight),    // y offset (negative to scroll through image)
-          pageWidth,
-          imgHeight
-        );
-      }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #6b1a2a;
+      border-bottom: 2px solid #6b1a2a;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
-      doc.save('ExpoFITers_Top3_Results.pdf');
-      document.body.removeChild(container);
-      btn.textContent = originalText;
-      btn.disabled = false;
-    })
-    .catch(err => {
-      console.error("PDF Export Error:", err);
-      document.body.removeChild(container);
-      btn.textContent = "ERROR - TRY AGAIN";
-      setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
-    });
-  });
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
 
+    thead tr {
+      background-color: #6b1a2a;
+      color: #fff;
+    }
+
+    th {
+      padding: 9px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid #a03040;
+    }
+
+    td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+      vertical-align: middle;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .row-even { background: #f9f9f9; }
+    .row-odd  { background: #ffffff; }
+
+    .cell-center { text-align: center; }
+
+    .cell-rtl {
+      text-align: right;
+      direction: rtl;
+    }
+
+    .rank-cell {
+      font-weight: 700;
+      color: #6b1a2a;
+      font-size: 15px;
+    }
+
+    .score-cell {
+      font-weight: 700;
+      color: #6b1a2a;
+      font-size: 14px;
+    }
+
+    .members-cell { vertical-align: top; padding: 8px 10px; }
+
+    .member-name {
+      direction: rtl;
+      text-align: right;
+      line-height: 1.8;
+      font-size: 12px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 0 auto 30px auto;
+      padding: 10px 32px;
+      background: #6b1a2a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: 'Cairo', Arial, sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    .print-btn:hover { background: #8b2a3a; }
+
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+  <h1>Expo FITers GP — Official Top 3 Results</h1>
+  ${tablesHTML}
+</body>
+</html>`);
+
+  printWindow.document.close();
 };
-
-function thStyle() {
-  return `
-    background-color: #6b1a2a;
-    color: white;
-    padding: 9px 8px;
-    border: 1px solid #ccc;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    font-weight: bold;
-  `;
-}
-
-function tdStyle() {
-  return `
-    padding: 8px;
-    border: 1px solid #ddd;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    vertical-align: top;
-  `;
-}
-
