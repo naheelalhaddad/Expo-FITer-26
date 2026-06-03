@@ -108,10 +108,18 @@ const colorPalette = [
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   
-  if (!session || session.user.email === 'admin@fit.edu.jo') {
+  if (!session) {
     window.location.replace('index.html');
     return;
   }
+
+  // 1. Dynamic UI Binding
+  const judgeDisplay = document.querySelector('.nav-judge') || document.getElementById('judge-id');
+  if (judgeDisplay) {
+    judgeDisplay.textContent = session.user.email.split('@')[0].toUpperCase();
+  }
+
+  const activeCategory = JUDGE_DIRECTORY[session.user.email];
   
   window.ACTIVE_USER_EMAIL = session.user.email;
  const activeCategory = JUDGE_DIRECTORY[session.user.email];
