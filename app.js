@@ -254,6 +254,10 @@ function openEval(idx) {
   
   currentTrackCriteria.forEach(c => criteriaValues[c.key] = c.max);
   
+  const btn = document.getElementById('submit-btn-element');
+  btn.disabled = false;
+  btn.innerHTML = `Submit Evaluation <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  
   document.getElementById('exp-hero-bg').style.background = `linear-gradient(135deg,${p.colors[0]} 0%,${p.colors[1]} 100%)`;
   document.getElementById('exp-tag').textContent = cleanCategory.split(':')[0];
   document.getElementById('exp-num').textContent = 'TEAM';
@@ -263,7 +267,7 @@ function openEval(idx) {
   document.getElementById('exp-category').textContent = cleanCategory.split(':')[0];
   document.getElementById('exp-members').innerHTML = p.members.map(m => `<div class="member-item"><div class="member-dot"></div>${m}</div>`).join('');
   
-    document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
+  document.getElementById('criteria-list').innerHTML = currentTrackCriteria.map(c => `
     <div class="criterion">
       <div class="criterion-header" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 12px;">
         <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
@@ -276,7 +280,6 @@ function openEval(idx) {
       <div class="range-hint"><span>0</span><span>${Math.round(c.max/2)}</span><span>${c.max}</span></div>
     </div>
   `).join('');
-
   
   document.getElementById('voting-ui').style.display = p.voted ? 'none' : 'block';
   const lockedState = document.getElementById('locked-state');
