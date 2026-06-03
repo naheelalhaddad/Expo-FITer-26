@@ -23,17 +23,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     adminProjects = teamsData.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       
-      // THE INTERCEPTION LOGIC
+      // THE INTERCEPTION LOGIC (With Strict Trimming)
       let trackCategory = (t.competition_track || '').trim();
       if (t.is_innovation === true) {
         trackCategory = 'Entrepreneurship and Innovation';
       }
 
       return {
-        num: t.team_number || 'UNKNOWN',
-        name: `Team ${t.team_number || 'UNKNOWN'}`,
-        category: trackCategory,
-        supervisor: t.supervisor_name || 'Unknown',
+        num: (t.team_number || 'UNKNOWN').trim(),
+        name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
+        category: trackCategory.trim(), // تم إضافة .trim() هنا لضمان عدم وجود مسافات وهمية
+        supervisor: (t.supervisor_name || 'Unknown').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
@@ -86,11 +86,12 @@ function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
   if (!tabsContainer) return;
   
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
+  // استخراج الفئات الفريدة مع ضمان تنظيف المسافات الزائدة مرة أخرى كإجراء احترازي
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
   const allTabs = ['Overall', ...uniqueCategories];
   
   tabsContainer.innerHTML = allTabs.map(cat => {
-    const shortName = cat.split(':')[0];
+    const shortName = cat.split(':')[0].trim();
     return `<div class="tab ${cat === 'Overall' ? 'active' : ''}" onclick="setTab('${cat}', this)">${shortName}</div>`;
   }).join('');
 }
@@ -101,7 +102,7 @@ window.setTab = function(category, element) {
   element.classList.add('active');
   
   const label = document.getElementById('champion-category-label');
-  const shortName = category.split(':')[0];
+  const shortName = category.split(':')[0].trim();
   if(label) label.innerHTML = category === 'Overall' ? 'Overall Ranking<br>Grand Champion' : `${shortName} Ranking<br>Category Leader`;
   
   renderDashboard();
@@ -123,7 +124,8 @@ function renderDashboard() {
   });
 
   if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
+    // مطابقة المسار بدقة مع تجاهل المسافات
+    leaderboardData = leaderboardData.filter(p => p.category.trim() === currentCategory.trim());
   }
 
   leaderboardData.sort((a, b) => b.score - a.score);
@@ -150,7 +152,7 @@ function renderTable(data) {
       </td>
       <td>${item.num}</td>
       <td style="color: rgba(255,255,255,0.8); font-size: 13px; direction: rtl;">${item.supervisor}</td>
-      <td>${item.category.split(':')[0]}</td>
+      <td>${item.category.split(':')[0].trim()}</td>
       <td class="score-cell">${item.score}</td>
     </tr>`;
   }).join('');
@@ -197,7 +199,7 @@ window.showTopResultsModal = function() {
     return { ...project, score: Number(finalScore.toFixed(2)) };
   });
 
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
   const allCategories = ['Overall', ...uniqueCategories];
 
   let modalContent = `
@@ -247,7 +249,7 @@ window.showTopResultsModal = function() {
   `;
 
   allCategories.forEach((cat) => {
-    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
+    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category.trim() === cat.trim());
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
     
