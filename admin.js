@@ -22,13 +22,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => {
-      const studentList = (t.students || '').split('\n').filter(s => s.trim() !== '');
+      // Robust split for both newlines and carriage returns
+      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
         category: (t.competition_track || '').trim(),
-        lead: studentList[0] || 'Unknown',
-        members: studentList.join('، ') || 'Unknown' // Arabic comma integration
+        members: studentList.join('، ') || 'Unknown' // Forces all members to display everywhere
       };
     });
   }
@@ -111,7 +111,6 @@ function renderDashboard() {
       num: project.num, 
       name: project.name, 
       category: project.category, 
-      lead: project.lead, 
       members: project.members,
       score: Number(finalScore.toFixed(2)) 
     };
@@ -137,8 +136,8 @@ function renderTable(data) {
       <td class="rank">#${index + 1}</td>
       <td>
         <div style="display:flex; align-items:center;">
-          <span class="avatar-placeholder" style="flex-shrink:0;">${item.lead.charAt(0).toUpperCase()}</span> 
-          <span style="white-space:normal; line-height:1.4; padding-right:1rem;">${item.members}</span>
+          <span class="avatar-placeholder" style="flex-shrink:0;">${item.members.charAt(0).toUpperCase()}</span> 
+          <span style="white-space:normal; line-height:1.4; padding-right:1rem; direction: rtl; text-align: right; display: block; width: 100%;">${item.members}</span>
         </div>
       </td>
       <td>${item.num}</td>
@@ -162,28 +161,30 @@ function renderChampionCard(data) {
     return;
   }
 
-  // Uses lead strictly for the clean champion card visual, all members in table/PDF
-  champName.textContent = data[0].lead; 
+  // Champion card now displays ALL members
+  champName.textContent = data[0].members; 
   champProject.textContent = data[0].num;
 
   runnerUpsContainer.innerHTML = data.slice(1, 4).filter(item => item.score > 0).map((item, index) => {
     return `<div class="runner-up-item">
-      <div><span class="runner-up-rank">#${index + 2}</span> <span style="color:rgba(255,255,255,0.85);">${item.lead}</span></div>
+      <div><span class="runner-up-rank">#${index + 2}</span> <span style="color:rgba(255,255,255,0.85);">${item.members}</span></div>
       <span class="runner-up-score">${item.score}</span>
     </div>`;
   }).join('');
 }
 
-// === CANVAS HTML-TO-PDF ENGINE (ARABIC COMPATIBLE) ===
+// === CANVAS HTML-TO-PDF ENGINE (VIRTUAL WORKER) ===
 window.exportToPDF = function() {
-  const container = document.createElement('div');
-  container.style.padding = '40px';
-  container.style.fontFamily = "'Inter', sans-serif, Arial";
-  container.style.background = '#ffffff';
-  container.style.color = '#000000';
-  container.style.width = '1000px'; 
-  
-  let htmlContent = `<h1 style="text-align:center; color:#6b1a2a; margin-bottom:40px; font-size:32px;">Expo FITers GP - Official Top 5 Results</h1>`;
+  const btn = document.querySelector('.btn-export');
+  const originalText = btn.textContent;
+  btn.textContent = "GENERATING PDF...";
+  btn.disabled = true;
+
+  // 1. Build Virtual HTML String (Bypasses viewport culling crash)
+  let htmlContent = `
+    <div style="padding: 30px; font-family: 'Arial', sans-serif; background: #ffffff; color: #000000; width: 1000px; margin: 0 auto;">
+      <h1 style="text-align:center; color:#6b1a2a; margin-bottom:40px; font-size:32px;">Expo FITers GP - Official Top 5 Results</h1>
+  `;
 
   const allScores = adminProjects.map(project => {
     const stats = projectStats[project.num];
@@ -211,7 +212,7 @@ window.exportToPDF = function() {
             <tr style="background-color: #6b1a2a; color: #fff;">
               <th style="padding: 14px; border: 1px solid #ddd; width: 8%;">Rank</th>
               <th style="padding: 14px; border: 1px solid #ddd; width: 12%;">Team ID</th>
-              <th style="padding: 14px; border: 1px solid #ddd; width: 68%; text-align: right;">Team Members</th>
+              <th style="padding: 14px; border: 1px solid #ddd; width: 68%; text-align: right; direction: rtl;">Team Members</th>
               <th style="padding: 14px; border: 1px solid #ddd; width: 12%;">Score</th>
             </tr>
           </thead>
@@ -230,30 +231,23 @@ window.exportToPDF = function() {
     `;
   });
 
-  container.innerHTML = htmlContent;
-  
-  // Hide off-screen during Canvas generation
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  document.body.appendChild(container);
-
-  const btn = document.querySelector('.btn-export');
-  const originalText = btn.textContent;
-  btn.textContent = "GENERATING PDF...";
-  btn.disabled = true;
+  htmlContent += `</div>`;
 
   const opt = {
-    margin:       [15, 15, 15, 15],
+    margin:       [10, 10, 10, 10],
     filename:     'ExpoFITers_Top5_Results.pdf',
     image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    html2canvas:  { scale: 2, useCORS: true },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(container).save().then(() => {
-    document.body.removeChild(container);
+  // 2. Inject string directly into engine memory
+  html2pdf().set(opt).from(htmlContent).save().then(() => {
     btn.textContent = originalText;
     btn.disabled = false;
+  }).catch(err => {
+    console.error("PDF Export Error: ", err);
+    btn.textContent = "ERROR - TRY AGAIN";
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
