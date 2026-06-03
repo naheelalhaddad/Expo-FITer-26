@@ -14,7 +14,9 @@ const JUDGE_DIRECTORY = {
   'cyber2@fit.edu.jo': 'CyberShield: Future of Cybersecurity',
   'web1@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation',
   'web2@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation',
-  'web3@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation'
+  'web3@fit.edu.jo': 'Digital Horizons: Web & Mobile Innovation',
+  'inno1@fit.edu.jo': 'Entrepreneurship and Innovation',
+  'inno2@fit.edu.jo': 'Entrepreneurship and Innovation'
 };
 
 let currentProject = null;
@@ -82,6 +84,19 @@ const TRACK_CRITERIA = {
     { name: 'Advanced Innovation & Tech Use', sub: '3D animations, AR/VR concepts, WebGL/Three.js, real-time analytics, smart interfaces', key: 'c7', max: 10 },
     { name: 'System Speed & Responsiveness', sub: 'Real-time updates, optimized APIs, fast loading, smooth interaction', key: 'c8', max: 5 }
   ]
+  'Entrepreneurship and Innovation': [
+    { name: 'Innovation and Creativity', sub: 'Creative architecture, unique business idea, integration of novel concepts', key: 'c1', max: 15 },
+    { name: 'Problem Identification and Solution Value', sub: 'Clear problem definition, practical usefulness, real-world value proposition', key: 'c2', max: 10 },
+    { name: 'Market Opportunity and Competitive Advantage', sub: 'Target audience sizing, competitive landscape analysis', key: 'c3', max: 10 },
+    { name: 'Business Model Viability', sub: 'Revenue streams, cost structure, value capture', key: 'c4', max: 15 },
+    { name: 'Financial Feasibility', sub: 'Funding strategy, path to profitability, cost management', key: 'c5', max: 10 },
+    { name: 'Scalability and Growth Potential', sub: 'Expansion capacity, user acquisition strategy, sustainable growth', key: 'c6', max: 10 },
+    { name: 'Social, Environmental, or Economic Impact', sub: 'Community benefit, sustainability, contribution to macro goals', key: 'c7', max: 10 },
+    { name: 'Technical and Operational Feasibility', sub: 'MVP quality, operational implementation readiness', key: 'c8', max: 5 },
+    { name: 'Presentation and Communication Skills', sub: 'Pitch delivery, clear explanation, team synergy', key: 'c9', max: 10 },
+    { name: 'Question and Answer Performance', sub: 'Strong defense of idea, Q&A handling', key: 'c10', max: 5 }
+  ]
+};
 };
 
 
@@ -138,7 +153,17 @@ async function submitVoteToSupabase() {
 
   const payload = {
     judge_email: window.ACTIVE_USER_EMAIL,
-    project_num: currentProject.num
+    project_num: currentProject.num,
+    criterion_1: criteriaValues.c1 || 0,
+        criterion_2: criteriaValues.c2 || 0,
+        criterion_3: criteriaValues.c3 || 0,
+        criterion_4: criteriaValues.c4 || 0,
+        criterion_5: criteriaValues.c5 || 0,
+        criterion_6: criteriaValues.c6 || 0,
+        criterion_7: criteriaValues.c7 || 0,
+        criterion_8: criteriaValues.c8 || 0,
+        criterion_9: criteriaValues.c9 || 0,  
+        criterion_10: criteriaValues.c10 || 0
   };
 
   const cleanCategory = currentProject.category.trim();
