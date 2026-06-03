@@ -310,24 +310,58 @@ window.exportToPDF = function() {
   container.innerHTML = htmlContent;
   document.body.appendChild(container);
 
-  const opt = {
-    margin:      0,
-    filename:    'ExpoFITers_Top3_Results.pdf',
-    image:       { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794, logging: false },
-    jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' }
-  };
+    // Give browser one frame to render the injected HTML before capturing
+  requestAnimationFrame(() => {
+    const pageWidth = 794;
+    const pageHeight = 1123;
 
-  html2pdf().set(opt).from(container).save().then(() => {
-    document.body.removeChild(container);
-    btn.textContent = originalText;
-    btn.disabled = false;
-  }).catch(err => {
-    console.error("PDF Export Error:", err);
-    document.body.removeChild(container);
-    btn.textContent = "ERROR - TRY AGAIN";
-    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+    domtoimage.toPng(container, {
+      width: pageWidth,
+      height: container.scrollHeight,
+      style: {
+        transform: 'none',
+        transformOrigin: 'top left',
+        width: pageWidth + 'px'
+      }
+    })
+    .then(dataUrl => {
+      const { jsPDF } = window.jspdf;
+      const imgHeight = container.scrollHeight;
+      const pagesNeeded = Math.ceil(imgHeight / pageHeight);
+
+      const doc = new jsPDF({
+        unit: 'px',
+        format: [pageWidth, pageHeight],
+        orientation: 'portrait'
+      });
+
+      for (let i = 0; i < pagesNeeded; i++) {
+        if (i > 0) doc.addPage([pageWidth, pageHeight], 'portrait');
+
+        // Shift the image up by one page height per page
+        doc.addImage(
+          dataUrl,
+          'PNG',
+          0,                    // x
+          -(i * pageHeight),    // y offset (negative to scroll through image)
+          pageWidth,
+          imgHeight
+        );
+      }
+
+      doc.save('ExpoFITers_Top3_Results.pdf');
+      document.body.removeChild(container);
+      btn.textContent = originalText;
+      btn.disabled = false;
+    })
+    .catch(err => {
+      console.error("PDF Export Error:", err);
+      document.body.removeChild(container);
+      btn.textContent = "ERROR - TRY AGAIN";
+      setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+    });
   });
+
 };
 
 function thStyle() {
