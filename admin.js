@@ -177,37 +177,15 @@ function renderChampionCard(data) {
   }).join('');
 }
 
-// === CANVAS HTML-TO-PDF ENGINE (ABSOLUTE BOUNDARY LOCK) ===
 window.exportToPDF = function() {
   const btn = document.querySelector('.btn-export');
   const originalText = btn.textContent;
   btn.textContent = "GENERATING PDF...";
   btn.disabled = true;
 
-  // 1. Create a physical off-screen DOM element with a hard-coded 800px width lock
-  const container = document.createElement('div');
-  container.style.width = '800px';
-  container.style.padding = '20px';
-  container.style.boxSizing = 'border-box';
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  container.style.backgroundColor = '#ffffff';
-
   let htmlContent = `
-    <style>
-      .pdf-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin-bottom: 40px !important; }
-      .pdf-table th, .pdf-table td { border: 1px solid #ddd !important; padding: 12px !important; font-size: 14px !important; font-family: Arial, sans-serif !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
-      .pdf-table th { background-color: #6b1a2a !important; color: #ffffff !important; font-weight: bold !important; text-align: center !important; text-transform: uppercase !important; }
-      .pdf-table td { color: #000000 !important; vertical-align: top !important; }
-      .pdf-table tr:nth-child(even) td { background-color: #f8f9fa !important; }
-      /* Strict mathematical columns ensuring the sum equals exactly 100% */
-      .col-rank { width: 10% !important; }
-      .col-id { width: 15% !important; }
-      .col-members { width: 55% !important; }
-      .col-score { width: 20% !important; } 
-    </style>
-    <h1 style="text-align:center; color:#6b1a2a; font-family: Arial, sans-serif; margin-bottom:30px; font-size:26px;">Expo FITers GP - Official Top 5 Results</h1>
+    <div style="width: 760px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background: #ffffff;">
+      <h1 style="text-align: center; color: #6b1a2a; font-size: 26px; margin-bottom: 30px; text-transform: uppercase;">Expo FITers GP - Official Top 5 Results</h1>
   `;
 
   const allScores = adminProjects.map(project => {
@@ -219,7 +197,7 @@ window.exportToPDF = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
-  allCategories.forEach((cat) => {
+  allCategories.forEach(cat => {
     let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     catProjects.sort((a, b) => b.score - a.score);
     const top5 = catProjects.slice(0, 5);
@@ -229,57 +207,57 @@ window.exportToPDF = function() {
     const title = cat === 'Overall' ? 'GRAND CHAMPIONS (OVERALL)' : `TRACK: ${cat}`;
 
     htmlContent += `
-      <div style="page-break-inside: avoid;">
-        <h2 style="color:#222; font-family: Arial, sans-serif; border-bottom:3px solid #6b1a2a; padding-bottom:5px; margin-bottom:15px; font-size:18px;">${title}</h2>
-        <table class="pdf-table">
+      <div style="page-break-inside: avoid; margin-bottom: 40px;">
+        <h2 style="color: #222222; border-bottom: 3px solid #6b1a2a; padding-bottom: 8px; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">${title}</h2>
+        <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
           <thead>
             <tr>
-              <th class="col-rank">Rank</th>
-              <th class="col-id">Team ID</th>
-              <th class="col-members" style="text-align: right !important;">Team Members</th>
-              <th class="col-score">Score</th>
+              <th style="width: 10%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Rank</th>
+              <th style="width: 15%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Team ID</th>
+              <th style="width: 60%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: right; font-weight: bold;">Team Members</th>
+              <th style="width: 15%; background: #6b1a2a; color: #ffffff; padding: 12px; border: 1px solid #dddddd; text-align: center; font-weight: bold;">Score</th>
             </tr>
           </thead>
           <tbody>
-            ${top5.map((p, i) => `
-              <tr>
-                <td style="text-align: center !important; font-weight: bold !important;">#${i + 1}</td>
-                <td style="text-align: center !important;">${p.num}</td>
-                <td style="direction: rtl !important; text-align: right !important; font-weight: bold !important; line-height: 1.6 !important;">
-                  ${p.membersList}
-                </td>
-                <td style="text-align: center !important; font-weight: bold !important; color: #6b1a2a !important;">${p.score}</td>
-              </tr>
-            `).join('')}
+    `;
+
+    top5.forEach((p, i) => {
+      const bg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+      htmlContent += `
+        <tr style="background-color: ${bg};">
+          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #000000; font-weight: bold; vertical-align: top;">#${i + 1}</td>
+          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #000000; vertical-align: top;">${p.num}</td>
+          <td style="padding: 12px; border: 1px solid #dddddd; text-align: right; color: #000000; font-weight: bold; direction: rtl; vertical-align: top; line-height: 1.6;">
+            ${p.membersList}
+          </td>
+          <td style="padding: 12px; border: 1px solid #dddddd; text-align: center; color: #6b1a2a; font-weight: bold; vertical-align: top;">${p.score}</td>
+        </tr>
+      `;
+    });
+
+    htmlContent += `
           </tbody>
         </table>
       </div>
     `;
   });
 
-  container.innerHTML = htmlContent;
-  
-  // 2. Element MUST be appended to the live document for precise geometry calculations
-  document.body.appendChild(container); 
+  htmlContent += `</div>`;
 
   const opt = {
-    margin:       10, // Generates a strict 10mm border on the physical PDF paper
-    filename:     'ExpoFITers_Top5_Results.pdf',
-    image:        { type: 'jpeg', quality: 1 },
-    // 3. Command the Canvas Engine to isolate exactly 800px to match the container
-    html2canvas:  { scale: 2, useCORS: true, width: 800, windowWidth: 800 }, 
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    margin: 10,
+    filename: 'ExpoFITers_Top5_Results.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(container).save().then(() => {
-    // 4. Clean up memory and reset button
-    document.body.removeChild(container);
+  html2pdf().set(opt).from(htmlContent).save().then(() => {
     btn.textContent = originalText;
     btn.disabled = false;
   }).catch(err => {
     console.error("PDF Export Error: ", err);
     btn.textContent = "ERROR - TRY AGAIN";
-    document.body.removeChild(container);
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
   });
 };
