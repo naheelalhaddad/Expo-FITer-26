@@ -112,9 +112,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.ACTIVE_USER_EMAIL = session.user.email;
-  activeCategory = JUDGE_DIRECTORY[session.user.email];
+  activeCategory = JUDGE_DIRECTORY[session.user.email] || 'All';
 
-  // المدمر الشامل: يبحث عن النص judge_01 في أي مكان بالصفحة ويستبدله بالإيميل
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
   let node;
   const emailPrefix = session.user.email.split('@')[0].toUpperCase();
@@ -127,13 +126,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
   if (!teamsError && teamsData) {
-    
-    // فلترة المسارات بناءً على عمود is_innovation
     const isolatedTeams = teamsData.filter(t => {
       if (activeCategory === 'Entrepreneurship and Innovation') {
         return t.is_innovation === true;
       } else {
-        return t.competition_track === activeCategory && t.is_innovation !== true;
+        return (t.competition_track || '').trim() === activeCategory && t.is_innovation !== true;
       }
     });
 
@@ -142,7 +139,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
-        category: activeCategory, // تثبيت الاسم ليتوافق مع الواجهة
+        category: activeCategory,
         supervisor: t.supervisor_name || 'Unknown',
         members: studentList,
         abstract: t.project_abstract || 'No abstract provided.',
@@ -150,8 +147,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         voted: false 
       };
     });
-
-    renderProjects();
   }
 
   const assignedProjects = activeCategory === 'All' ? projects : projects.filter(p => p.category === activeCategory);
