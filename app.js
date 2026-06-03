@@ -114,28 +114,35 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   
   window.ACTIVE_USER_EMAIL = session.user.email;
-  activeCategory = JUDGE_DIRECTORY[window.ACTIVE_USER_EMAIL] || 'All';
-  
-  document.getElementById('judge-id-display').textContent = window.ACTIVE_USER_EMAIL.split('@')[0].toUpperCase();
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) searchInput.placeholder = `Search assigned track...`;
-  
-  const slider = document.getElementById('category-slider');
-  if (slider) slider.style.display = 'none';
+ const activeCategory = JUDGE_DIRECTORY[session.user.email];
 
-  const { data: teamsData, error } = await supabaseClient.from('teams').select('*');
+  const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
-  if (!error && teamsData) {
-    projects = teamsData.map((t, index) => ({
-      num: t.team_number || `P-${index}`,
-      name: `Team ${t.team_number || index}`,
-      category: (t.competition_track || '').trim(),
-      supervisor: t.supervisor_name || 'Unknown',
-      members: (t.students || '').split('\n').filter(s => s.trim() !== ''),
-      abstract: 'Project details available during presentation.',
-      colors: colorPalette[index % colorPalette.length],
-      voted: false
-    }));
+  if (!teamsError && teamsData) {
+    
+    const isolatedTeams = teamsData.filter(t => {
+      if (activeCategory === 'Entrepreneurship and Innovation') {
+        return t.is_innovation === true;
+      } else {
+        return t.competition_track === activeCategory && t.is_innovation !== true;
+      }
+    });
+
+    projects = isolatedTeams.map(t => {
+      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+      return {
+        num: t.team_number || 'UNKNOWN',
+        name: `Team ${t.team_number || 'UNKNOWN'}`,
+        category: activeCategory,
+        supervisor: t.supervisor_name || 'Unknown',
+        members: studentList,
+        abstract: t.project_abstract || 'No abstract provided.',
+        colors: ['#c31e2d', '#6b1a2a'],
+        voted: false 
+      };
+    });
+
+    renderProjects();
   }
 
   const assignedProjects = activeCategory === 'All' ? projects : projects.filter(p => p.category === activeCategory);
