@@ -22,10 +22,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!teamsError && teamsData) {
     adminProjects = teamsData.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+      
+      // THE INTERCEPTION LOGIC
+      let trackCategory = (t.competition_track || '').trim();
+      if (t.is_innovation === true) {
+        trackCategory = 'Entrepreneurship and Innovation';
+      }
+
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
-        category: (t.competition_track || '').trim(),
+        category: trackCategory,
         supervisor: t.supervisor_name || 'Unknown',
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
@@ -193,7 +200,6 @@ window.showTopResultsModal = function() {
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
-  // Injecting Responsive CSS directly into the modal for mobile optimization
   let modalContent = `
     <style id="modal-mobile-styles">
       .modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(10,6,8,0.95); backdrop-filter: blur(16px); overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif; }
@@ -225,7 +231,6 @@ window.showTopResultsModal = function() {
         .result-rank { font-size: 1.6rem; }
         .result-score { font-size: 1.6rem; }
         
-        /* Stacks the Team ID and Supervisor vertically on phones to save horizontal space */
         .result-meta { flex-direction: column; align-items: flex-end; gap: 4px; }
         .result-team-id { font-size: 12px; order: 2; }
         .result-supervisor { font-size: 11px; order: 1; white-space: normal; text-align: right;}
@@ -290,4 +295,3 @@ window.showTopResultsModal = function() {
 
   document.body.insertAdjacentHTML('beforeend', modalContent);
 };
-
