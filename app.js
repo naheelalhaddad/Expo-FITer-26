@@ -83,7 +83,7 @@ const TRACK_CRITERIA = {
     { name: 'Backend, Database & Cloud Integration', sub: 'APIs, Firebase/Supabase, real-time databases, scalable architecture', key: 'c6', max: 10 },
     { name: 'Advanced Innovation & Tech Use', sub: '3D animations, AR/VR concepts, WebGL/Three.js, real-time analytics, smart interfaces', key: 'c7', max: 10 },
     { name: 'System Speed & Responsiveness', sub: 'Real-time updates, optimized APIs, fast loading, smooth interaction', key: 'c8', max: 5 }
-  ]
+  ], // <--- تم إضافة الفاصلة هنا لإصلاح الانهيار
   'Entrepreneurship and Innovation': [
     { name: 'Innovation and Creativity', sub: 'Creative architecture, unique business idea, integration of novel concepts', key: 'c1', max: 15 },
     { name: 'Problem Identification and Solution Value', sub: 'Clear problem definition, practical usefulness, real-world value proposition', key: 'c2', max: 10 },
@@ -97,8 +97,6 @@ const TRACK_CRITERIA = {
     { name: 'Question and Answer Performance', sub: 'Strong defense of idea, Q&A handling', key: 'c10', max: 5 }
   ]
 };
-};
-
 
 const colorPalette = [
   ['#6b1a2a','#300a12'], ['#4a1020','#1f040b'], ['#8a2236','#400c19'],
@@ -114,18 +112,23 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.ACTIVE_USER_EMAIL = session.user.email;
-  const activeCategory = JUDGE_DIRECTORY[session.user.email];
+  activeCategory = JUDGE_DIRECTORY[session.user.email];
 
-  const judgeElements = document.querySelectorAll('.nav-judge, #judge-id, .judge-id, span, div');
-  judgeElements.forEach(el => {
-    if (el.textContent.trim().toLowerCase() === 'judge_01') {
-      el.textContent = session.user.email.split('@')[0].toUpperCase();
+  // المدمر الشامل: يبحث عن النص judge_01 في أي مكان بالصفحة ويستبدله بالإيميل
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  const emailPrefix = session.user.email.split('@')[0].toUpperCase();
+  while(node = walk.nextNode()) {
+    if(node.nodeValue.toLowerCase().includes('judge_01')) {
+      node.nodeValue = node.nodeValue.replace(/judge_01/ig, emailPrefix);
     }
-  });
+  }
 
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
   if (!teamsError && teamsData) {
+    
+    // فلترة المسارات بناءً على عمود is_innovation
     const isolatedTeams = teamsData.filter(t => {
       if (activeCategory === 'Entrepreneurship and Innovation') {
         return t.is_innovation === true;
@@ -139,7 +142,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       return {
         num: t.team_number || 'UNKNOWN',
         name: `Team ${t.team_number || 'UNKNOWN'}`,
-        category: activeCategory,
+        category: activeCategory, // تثبيت الاسم ليتوافق مع الواجهة
         supervisor: t.supervisor_name || 'Unknown',
         members: studentList,
         abstract: t.project_abstract || 'No abstract provided.',
@@ -168,15 +171,15 @@ async function submitVoteToSupabase() {
     judge_email: window.ACTIVE_USER_EMAIL,
     project_num: currentProject.num,
     criterion_1: criteriaValues.c1 || 0,
-        criterion_2: criteriaValues.c2 || 0,
-        criterion_3: criteriaValues.c3 || 0,
-        criterion_4: criteriaValues.c4 || 0,
-        criterion_5: criteriaValues.c5 || 0,
-        criterion_6: criteriaValues.c6 || 0,
-        criterion_7: criteriaValues.c7 || 0,
-        criterion_8: criteriaValues.c8 || 0,
-        criterion_9: criteriaValues.c9 || 0,  
-        criterion_10: criteriaValues.c10 || 0
+    criterion_2: criteriaValues.c2 || 0,
+    criterion_3: criteriaValues.c3 || 0,
+    criterion_4: criteriaValues.c4 || 0,
+    criterion_5: criteriaValues.c5 || 0,
+    criterion_6: criteriaValues.c6 || 0,
+    criterion_7: criteriaValues.c7 || 0,
+    criterion_8: criteriaValues.c8 || 0,
+    criterion_9: criteriaValues.c9 || 0,  
+    criterion_10: criteriaValues.c10 || 0
   };
 
   const cleanCategory = currentProject.category.trim();
