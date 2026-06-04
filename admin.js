@@ -20,12 +20,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
-    adminProjects = teamsData.flatMap(t => {
+    adminProjects = teamsData.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
-      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
 
-      const baseProject = {
+      return {
         num: (t.team_number || 'UNKNOWN').trim(),
         name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
         category: rawTrack,
@@ -33,17 +32,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
-
-      const mappedProjects = [baseProject];
-
-      if (isInnovation) {
-        mappedProjects.push({
-          ...baseProject,
-          category: 'Entrepreneurship and Innovation'
-        });
-      }
-
-      return mappedProjects;
     });
   }
 
@@ -93,11 +81,11 @@ function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
   if (!tabsContainer) return;
   
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allTabs = ['Overall', ...uniqueCategories];
   
   tabsContainer.innerHTML = allTabs.map(cat => {
-    const shortName = cat.split(':')[0].trim();
+    const shortName = cat.split(':')[0];
     return `<div class="tab ${cat === 'Overall' ? 'active' : ''}" data-cat="${cat.replace(/"/g, '&quot;')}" onclick="setTab(this.dataset.cat, this)">${shortName}</div>`;
   }).join('');
 }
@@ -108,7 +96,7 @@ window.setTab = function(category, element) {
   element.classList.add('active');
   
   const label = document.getElementById('champion-category-label');
-  const shortName = category.split(':')[0].trim();
+  const shortName = category.split(':')[0];
   if(label) label.innerHTML = category === 'Overall' ? 'Overall Ranking<br>Grand Champion' : `${shortName} Ranking<br>Category Leader`;
   
   renderDashboard();
@@ -130,14 +118,7 @@ function renderDashboard() {
   });
 
   if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category.trim() === currentCategory.trim());
-  } else {
-    const seen = new Set();
-    leaderboardData = leaderboardData.filter(p => {
-      if (seen.has(p.num)) return false;
-      seen.add(p.num);
-      return true;
-    });
+    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
   }
 
   leaderboardData.sort((a, b) => b.score - a.score);
@@ -164,7 +145,7 @@ function renderTable(data) {
       </td>
       <td>${item.num}</td>
       <td style="color: rgba(255,255,255,0.8); font-size: 13px; direction: rtl;">${item.supervisor}</td>
-      <td>${item.category.split(':')[0].trim()}</td>
+      <td>${item.category.split(':')[0]}</td>
       <td class="score-cell">${item.score}</td>
     </tr>`;
   }).join('');
@@ -211,7 +192,7 @@ window.showTopResultsModal = function() {
     return { ...project, score: Number(finalScore.toFixed(2)) };
   });
 
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
   let modalContent = `
@@ -259,17 +240,7 @@ window.showTopResultsModal = function() {
   `;
 
   allCategories.forEach((cat) => {
-    let catProjects = [];
-    if (cat === 'Overall') {
-      const seen = new Set();
-      catProjects = allScores.filter(p => {
-        if (seen.has(p.num)) return false;
-        seen.add(p.num);
-        return true;
-      });
-    } else {
-      catProjects = allScores.filter(p => p.category.trim() === cat.trim());
-    }
+    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
     
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
