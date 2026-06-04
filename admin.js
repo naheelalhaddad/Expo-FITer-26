@@ -7,6 +7,29 @@ let adminProjects = [];
 let currentCategory = 'Overall';
 let projectStats = {}; 
 
+// 1. استخراج فئة المحكم (مثال: inno1 -> inno, web2 -> web)
+function getJudgePrefix(email) {
+  if (!email) return 'unknown';
+  return email.split('@')[0].replace(/[0-9]/g, '').toLowerCase();
+}
+
+// 2. خوارزمية الأوزان المتوازنة (تحسب متوسط كل فئة، ثم متوسط المجاميع)
+function calculateBalancedScore(pNum) {
+  const stats = projectStats[pNum];
+  if (!stats) return 0;
+
+  let sumOfAverages = 0;
+  let groupCount = 0;
+
+  for (const prefix in stats) {
+    const groupAverage = stats[prefix].totalScore / stats[prefix].voteCount;
+    sumOfAverages += groupAverage;
+    groupCount++;
+  }
+
+  return groupCount > 0 ? Number((sumOfAverages / groupCount).toFixed(2)) : 0;
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   
@@ -21,16 +44,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
     
-    // 1. STRICT JAVASCRIPT DEDUPLICATION (Destroys Ghost Rows & Hidden Spaces)
+    // فلترة التكرارات (Ghost Rows) بقوة الجافاسكريبت لضمان عدم ظهور أي تكرار في الواجهة
     const uniqueTeamsMap = new Map();
     teamsData.forEach(t => {
       const cleanTeamId = (t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
-      
-      // If a duplicate exists, it overwrites it, guaranteeing only 1 entry per Team ID
       uniqueTeamsMap.set(cleanTeamId, t);
     });
 
-    // 2. MAP ONLY THE UNIQUE TEAMS
     adminProjects = Array.from(uniqueTeamsMap.values()).map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
@@ -38,7 +58,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       return {
         num: (t.team_number || 'UNKNOWN').trim().toUpperCase(),
         name: `Team ${(t.team_number || 'UNKNOWN').trim().toUpperCase()}`,
-        category: rawTrack, // Rendering in Original Categories as requested
+        category: rawTrack,
         supervisor: (t.supervisor_name || 'Unknown').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
@@ -48,9 +68,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   generateTabs();
 
+  // تحديث 3: سحب إيميل المحكم من قاعدة البيانات لتطبيق الخوارزمية
   const { data: evalsData, error: evalsError } = await supabaseClient
     .from('evaluations')
-    .select('project_num, total_score');
+    .select('project_num, total_score, judge_email');
     
   if (!evalsError && evalsData) {
     rawEvaluations = evalsData;
@@ -64,10 +85,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (payload.new && payload.new.project_num) {
           const pNum = payload.new.project_num.trim().toUpperCase();
           const tScore = payload.new.total_score || 0;
+          const prefix = getJudgePrefix(payload.new.judge_email);
           
-          if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
-          projectStats[pNum].totalScore += tScore;
-          projectStats[pNum].voteCount += 1;
+          if (!projectStats[pNum]) projectStats[pNum] = {};
+          if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { totalScore: 0, voteCount: 0 };
+          
+          projectStats[pNum][prefix].totalScore += tScore;
+          projectStats[pNum][prefix].voteCount += 1;
           
           renderDashboard();
         }
@@ -81,10 +105,13 @@ function buildInitialCache() {
   rawEvaluations.forEach(record => {
     const pNum = (record.project_num || '').trim().toUpperCase();
     const tScore = record.total_score || 0; 
+    const prefix = getJudgePrefix(record.judge_email);
     
-    if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
-    projectStats[pNum].totalScore += tScore;
-    projectStats[pNum].voteCount += 1;
+    if (!projectStats[pNum]) projectStats[pNum] = {};
+    if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { totalScore: 0, voteCount: 0 };
+    
+    projectStats[pNum][prefix].totalScore += tScore;
+    projectStats[pNum][prefix].voteCount += 1;
   });
 }
 
@@ -115,16 +142,13 @@ window.setTab = function(category, element) {
 
 function renderDashboard() {
   let leaderboardData = adminProjects.map(project => {
-    const stats = projectStats[project.num];
-    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
-
     return { 
       num: project.num, 
       category: project.category, 
       supervisor: project.supervisor,
       membersInline: project.membersInline,
       membersList: project.membersList,
-      score: Number(finalScore.toFixed(2)) 
+      score: calculateBalancedScore(project.num) 
     };
   });
 
@@ -198,9 +222,7 @@ window.showTopResultsModal = function() {
   if (existingOverlay) existingOverlay.remove();
 
   const allScores = adminProjects.map(project => {
-    const stats = projectStats[project.num];
-    const finalScore = stats && stats.voteCount > 0 ? (stats.totalScore / stats.voteCount) : 0;
-    return { ...project, score: Number(finalScore.toFixed(2)) };
+    return { ...project, score: calculateBalancedScore(project.num) };
   });
 
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
