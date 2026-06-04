@@ -20,14 +20,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   if (!teamsError && teamsData) {
-    adminProjects = teamsData.map(t => {
+    
+    // 1. STRICT JAVASCRIPT DEDUPLICATION (Destroys Ghost Rows & Hidden Spaces)
+    const uniqueTeamsMap = new Map();
+    teamsData.forEach(t => {
+      const cleanTeamId = (t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
+      
+      // If a duplicate exists, it overwrites it, guaranteeing only 1 entry per Team ID
+      uniqueTeamsMap.set(cleanTeamId, t);
+    });
+
+    // 2. MAP ONLY THE UNIQUE TEAMS
+    adminProjects = Array.from(uniqueTeamsMap.values()).map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
       const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
 
       return {
-        num: (t.team_number || 'UNKNOWN').trim(),
-        name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
-        category: rawTrack,
+        num: (t.team_number || 'UNKNOWN').trim().toUpperCase(),
+        name: `Team ${(t.team_number || 'UNKNOWN').trim().toUpperCase()}`,
+        category: rawTrack, // Rendering in Original Categories as requested
         supervisor: (t.supervisor_name || 'Unknown').trim(),
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
@@ -51,7 +62,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     .channel('evaluations-channel')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
         if (payload.new && payload.new.project_num) {
-          const pNum = payload.new.project_num;
+          const pNum = payload.new.project_num.trim().toUpperCase();
           const tScore = payload.new.total_score || 0;
           
           if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
@@ -68,7 +79,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 function buildInitialCache() {
   projectStats = {};
   rawEvaluations.forEach(record => {
-    const pNum = record.project_num;
+    const pNum = (record.project_num || '').trim().toUpperCase();
     const tScore = record.total_score || 0; 
     
     if (!projectStats[pNum]) projectStats[pNum] = { totalScore: 0, voteCount: 0 };
