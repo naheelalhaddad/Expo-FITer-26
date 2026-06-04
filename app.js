@@ -126,20 +126,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
   
   if (!teamsError && teamsData) {
-    
-    // التنظيف الصارم للمسار النشط
     const activeCatClean = activeCategory.replace(/\s+/g, ' ').trim();
 
     const isolatedTeams = teamsData.filter(t => {
-      // قراءة صارمة للمتغير سواء كان Boolean أو String
       const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
-      // تنظيف صارم لمسار البيانات من الـ Database للتخلص من المسافات الوهمية
       const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
 
       if (activeCatClean === 'Entrepreneurship and Innovation') {
         return isInnovation;
       } else {
-        return rawTrack === activeCatClean && !isInnovation;
+        return rawTrack === activeCatClean;
       }
     });
 
@@ -165,6 +161,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 });
+
 
 async function submitVoteToSupabase() {
   const btn = document.getElementById('submit-btn-element');
