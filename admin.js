@@ -18,37 +18,34 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
- const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
-if (!teamsError && teamsData) {
-  adminProjects = teamsData.map(t => {
-    const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
-    const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
-    const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
+  const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
+  if (!teamsError && teamsData) {
+    adminProjects = teamsData.flatMap(t => {
+      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+      const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
+      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
 
-    let trackCategory = rawTrack;
-    if (isInnovation) {
-      trackCategory = 'Entrepreneurship and Innovation';
-    }
+      const baseProject = {
+        num: (t.team_number || 'UNKNOWN').trim(),
+        name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
+        category: rawTrack,
+        supervisor: (t.supervisor_name || 'Unknown').trim(),
+        membersInline: studentList.join('، ') || 'Unknown',
+        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
+      };
 
-    return {
-      num: (t.team_number || 'UNKNOWN').trim(),
-      name: `Team ${(t.team_number || 'UNKNOWN').trim()}`,
-      category: trackCategory,
-      supervisor: (t.supervisor_name || 'Unknown').trim(),
-      membersInline: studentList.join('، ') || 'Unknown',
-      membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown'
-    };
-  });
+      const mappedProjects = [baseProject];
 
-  // Deduplication: if a team appears twice, keep the innovation-flagged version
-  const seen = new Map();
-  adminProjects.forEach(p => {
-    if (!seen.has(p.num) || p.category === 'Entrepreneurship and Innovation') {
-      seen.set(p.num, p);
-    }
-  });
-  adminProjects = [...seen.values()];
-}
+      if (isInnovation) {
+        mappedProjects.push({
+          ...baseProject,
+          category: 'Entrepreneurship and Innovation'
+        });
+      }
+
+      return mappedProjects;
+    });
+  }
 
   generateTabs();
 
@@ -96,12 +93,11 @@ function generateTabs() {
   const tabsContainer = document.getElementById('category-tabs');
   if (!tabsContainer) return;
   
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
   const allTabs = ['Overall', ...uniqueCategories];
   
   tabsContainer.innerHTML = allTabs.map(cat => {
     const shortName = cat.split(':')[0].trim();
-    // استخدام data-cat للحماية من أي أخطاء في الـ Quotes
     return `<div class="tab ${cat === 'Overall' ? 'active' : ''}" data-cat="${cat.replace(/"/g, '&quot;')}" onclick="setTab(this.dataset.cat, this)">${shortName}</div>`;
   }).join('');
 }
@@ -134,7 +130,14 @@ function renderDashboard() {
   });
 
   if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
+    leaderboardData = leaderboardData.filter(p => p.category.trim() === currentCategory.trim());
+  } else {
+    const seen = new Set();
+    leaderboardData = leaderboardData.filter(p => {
+      if (seen.has(p.num)) return false;
+      seen.add(p.num);
+      return true;
+    });
   }
 
   leaderboardData.sort((a, b) => b.score - a.score);
@@ -208,7 +211,7 @@ window.showTopResultsModal = function() {
     return { ...project, score: Number(finalScore.toFixed(2)) };
   });
 
-  const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
+  const uniqueCategories = [...new Set(adminProjects.map(p => p.category.trim()))];
   const allCategories = ['Overall', ...uniqueCategories];
 
   let modalContent = `
@@ -256,7 +259,18 @@ window.showTopResultsModal = function() {
   `;
 
   allCategories.forEach((cat) => {
-    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
+    let catProjects = [];
+    if (cat === 'Overall') {
+      const seen = new Set();
+      catProjects = allScores.filter(p => {
+        if (seen.has(p.num)) return false;
+        seen.add(p.num);
+        return true;
+      });
+    } else {
+      catProjects = allScores.filter(p => p.category.trim() === cat.trim());
+    }
+    
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
     
