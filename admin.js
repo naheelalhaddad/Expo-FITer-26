@@ -5,7 +5,49 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let rawEvaluations = [];
 let adminProjects = [];
 let currentCategory = 'Overall';
-let projectStats = {}; 
+let projectStats = {};
+
+// 1. استخراج الرمز من الإيميل (مثال: inno1@fit.edu.jo -> inno)
+function getJudgePrefix(email) {
+  if (!email) return 'unknown';
+  return String(email).toLowerCase().trim().split('@')[0].replace(/[0-9]/g, '');
+}
+
+// 2. ربط التبويب بالرمز الخاص به برمجياً لتصفية العلامات
+function getPrefixForCategory(category) {
+  const cat = category.toLowerCase();
+  if (cat.includes('robo')) return 'robo';
+  if (cat.includes('ai') || cat.includes('intelligence')) return 'ai';
+  if (cat.includes('cloud')) return 'cloud';
+  if (cat.includes('cyber')) return 'cyber';
+  if (cat.includes('digital') || cat.includes('web')) return 'web';
+  if (cat.includes('entrepreneurship') || cat.includes('innovation')) return 'inno';
+  return null;
+}
+
+// 3. حساب العلامة المعزولة (حسب التبويب المفتوح)
+function getIsolatedScore(pNum, targetCategory) {
+  const stats = projectStats[pNum];
+  if (!stats) return 0;
+  
+  if (targetCategory === 'Overall') {
+    // حساب بطل الأبطال (يجمع متوسط الريادة + متوسط التقنية ويقسمهم على 2 للعدل التام)
+    let groupSum = 0;
+    let groupCount = 0;
+    for (const prefix in stats) {
+      groupSum += (stats[prefix].sum / stats[prefix].count);
+      groupCount++;
+    }
+    return groupCount > 0 ? Number((groupSum / groupCount).toFixed(2)) : 0;
+  } else {
+    // حساب المسار المحدد (يجلب أصوات محكمي المسار فقط ويتجاهل الباقي)
+    const requiredPrefix = getPrefixForCategory(targetCategory);
+    if (!requiredPrefix || !stats[requiredPrefix]) return 0;
+    
+    const specificStats = stats[requiredPrefix];
+    return Number((specificStats.sum / specificStats.count).toFixed(2));
+  }
+}
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -19,38 +61,48 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (video) video.playbackRate = 0.5;
 
   const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
+  
   if (!teamsError && teamsData) {
-    
-    // 1. DEDUPLICATE DATABASE GHOST ROWS
+    // تدمير التكرارات من قاعدة البيانات ودمجها بكيان واحد
     const uniqueTeams = new Map();
     teamsData.forEach(t => {
-      const num = (t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
-      const rawTrack = (t.competition_track || '').trim();
+      const num = String(t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
       const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
+      const rawTrack = String(t.competition_track || '').trim();
 
       if (!uniqueTeams.has(num)) {
-        uniqueTeams.set(num, { ...t, num, rawTrack, isInnovation });
-      } else {
-        if (isInnovation) uniqueTeams.get(num).isInnovation = true;
+        uniqueTeams.set(num, {
+          num: num,
+          category: rawTrack,
+          supervisor: String(t.supervisor_name || 'Unknown').trim(),
+          students: String(t.students || ''),
+          isInnovation: isInnovation
+        });
+      } else if (isInnovation) {
+        uniqueTeams.get(num).isInnovation = true;
       }
     });
 
-    // 2. BUILD PROJECTS ARRAY (DUAL-TAB RENDERING)
     adminProjects = [];
+    
+    // بناء مصفوفة العرض: استنساخ مشاريع الريادة لمسارين مختلفين
     uniqueTeams.forEach(t => {
-      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+      const studentArray = t.students.split(/\r?\n/).filter(s => s.trim() !== '');
+      const membersInline = studentArray.join('، ') || 'Unknown';
+      const membersList = studentArray.map(s => `• ${s}`).join('<br>') || 'Unknown';
+
       const baseObj = {
         num: t.num,
         name: `Team ${t.num}`,
-        supervisor: (t.supervisor_name || 'Unknown').trim(),
-        membersInline: studentList.join('، ') || 'Unknown',
-        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown'
+        supervisor: t.supervisor,
+        membersInline: membersInline,
+        membersList: membersList
       };
 
-      // Add to Original Technical Track
-      adminProjects.push({ ...baseObj, category: t.rawTrack });
+      // 1. وضعه في تبويبه التقني الأصلي
+      adminProjects.push({ ...baseObj, category: t.category });
 
-      // Clone to Innovation Track if flagged
+      // 2. إذا كان ريادة، يتم استنساخه ليظهر في تبويب الريادة
       if (t.isInnovation) {
         adminProjects.push({ ...baseObj, category: 'Entrepreneurship and Innovation' });
       }
@@ -73,10 +125,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     .channel('evaluations-channel')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
         if (payload.new && payload.new.project_num) {
-          const pNum = payload.new.project_num.replace(/\s+/g, '').toUpperCase();
+          const pNum = String(payload.new.project_num).replace(/\s+/g, '').toUpperCase();
           const tScore = payload.new.total_score || 0;
-          const email = (payload.new.judge_email || '').toLowerCase();
-          const prefix = email.split('@')[0].replace(/[0-9]/g, ''); 
+          const prefix = getJudgePrefix(payload.new.judge_email);
           
           if (!projectStats[pNum]) projectStats[pNum] = {};
           if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { sum: 0, count: 0 };
@@ -94,10 +145,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 function buildInitialCache() {
   projectStats = {};
   rawEvaluations.forEach(record => {
-    const pNum = (record.project_num || '').replace(/\s+/g, '').toUpperCase();
+    const pNum = String(record.project_num || '').replace(/\s+/g, '').toUpperCase();
     const tScore = record.total_score || 0; 
-    const email = (record.judge_email || '').toLowerCase();
-    const prefix = email.split('@')[0].replace(/[0-9]/g, ''); 
+    const prefix = getJudgePrefix(record.judge_email);
     
     if (!projectStats[pNum]) projectStats[pNum] = {};
     if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { sum: 0, count: 0 };
@@ -105,22 +155,6 @@ function buildInitialCache() {
     projectStats[pNum][prefix].sum += tScore;
     projectStats[pNum][prefix].count += 1;
   });
-}
-
-// 3. BALANCED WEIGHTING ALGORITHM
-function getProjectScore(pNum) {
-  const stats = projectStats[pNum];
-  if (!stats) return 0;
-  
-  let sumOfAvgs = 0;
-  let groupCount = 0;
-  
-  for (const prefix in stats) {
-    sumOfAvgs += (stats[prefix].sum / stats[prefix].count);
-    groupCount++;
-  }
-  
-  return groupCount > 0 ? Number((sumOfAvgs / groupCount).toFixed(2)) : 0;
 }
 
 function generateTabs() {
@@ -152,19 +186,17 @@ function renderDashboard() {
   let leaderboardData = [];
 
   if (currentCategory === 'Overall') {
-    // PROTECT OVERALL TAB FROM DUPLICATES
     const seen = new Set();
     adminProjects.forEach(p => {
       if (!seen.has(p.num)) {
         seen.add(p.num);
-        leaderboardData.push({ ...p, score: getProjectScore(p.num) });
+        leaderboardData.push({ ...p, score: getIsolatedScore(p.num, 'Overall') });
       }
     });
   } else {
-    // FILTER BY ACTIVE TAB
     adminProjects.forEach(p => {
       if (p.category === currentCategory) {
-        leaderboardData.push({ ...p, score: getProjectScore(p.num) });
+        leaderboardData.push({ ...p, score: getIsolatedScore(p.num, currentCategory) });
       }
     });
   }
@@ -247,7 +279,6 @@ window.showTopResultsModal = function() {
       .modal-close-btn:hover { background: rgba(255,255,255,0.1); }
       .track-container { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
       .track-title { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--maroon, #c31e2d); text-transform: uppercase; letter-spacing: 1px; margin: 0; }
-      
       .result-card { border-radius: 12px; padding: 1.25rem; display: grid; grid-template-columns: 60px 1fr 80px; gap: 1.5rem; align-items: center; }
       .result-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; font-weight: 900; text-align: center; line-height: 1; }
       .result-score { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 700; color: #fff; text-align: right; }
@@ -255,7 +286,6 @@ window.showTopResultsModal = function() {
       .result-team-id { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #fff; flex-shrink: 0; }
       .result-supervisor { font-size: 12px; color: rgba(255,255,255,0.5); direction: rtl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .result-members { font-size: 15px; color: rgba(255,255,255,0.9); direction: rtl; text-align: right; line-height: 1.5; }
-
       @media (max-width: 768px) {
         .modal-overlay { padding: 1rem; }
         .modal-container { gap: 1.5rem; padding-bottom: 2rem; }
@@ -265,14 +295,12 @@ window.showTopResultsModal = function() {
         .result-card { grid-template-columns: 35px 1fr 60px; gap: 1rem; padding: 1rem; }
         .result-rank { font-size: 1.6rem; }
         .result-score { font-size: 1.6rem; }
-        
         .result-meta { flex-direction: column; align-items: flex-end; gap: 4px; }
         .result-team-id { font-size: 12px; order: 2; }
         .result-supervisor { font-size: 11px; order: 1; white-space: normal; text-align: right;}
         .result-members { font-size: 13px; line-height: 1.4; }
       }
     </style>
-    
     <div id="results-overlay" class="modal-overlay">
       <div class="modal-container">
         <div class="modal-header">
@@ -289,13 +317,13 @@ window.showTopResultsModal = function() {
       adminProjects.forEach(p => {
         if (!seen.has(p.num)) {
           seen.add(p.num);
-          catProjects.push({ ...p, score: getProjectScore(p.num) });
+          catProjects.push({ ...p, score: getIsolatedScore(p.num, 'Overall') });
         }
       });
     } else {
       adminProjects.forEach(p => {
         if (p.category === cat) {
-          catProjects.push({ ...p, score: getProjectScore(p.num) });
+          catProjects.push({ ...p, score: getIsolatedScore(p.num, cat) });
         }
       });
     }
