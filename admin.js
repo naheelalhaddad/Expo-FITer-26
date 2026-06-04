@@ -2,33 +2,8 @@ const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let rawEvaluations = [];
 let adminProjects = [];
 let currentCategory = 'Overall';
-let projectStats = {}; 
-
-// 1. استخراج فئة المحكم (مثال: inno1 -> inno, web2 -> web)
-function getJudgePrefix(email) {
-  if (!email) return 'unknown';
-  return email.split('@')[0].replace(/[0-9]/g, '').toLowerCase();
-}
-
-// 2. خوارزمية الأوزان المتوازنة (تحسب متوسط كل فئة، ثم متوسط المجاميع)
-function calculateBalancedScore(pNum) {
-  const stats = projectStats[pNum];
-  if (!stats) return 0;
-
-  let sumOfAverages = 0;
-  let groupCount = 0;
-
-  for (const prefix in stats) {
-    const groupAverage = stats[prefix].totalScore / stats[prefix].voteCount;
-    sumOfAverages += groupAverage;
-    groupCount++;
-  }
-
-  return groupCount > 0 ? Number((sumOfAverages / groupCount).toFixed(2)) : 0;
-}
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -41,78 +16,38 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
-  if (!teamsError && teamsData) {
-    
-    // فلترة التكرارات (Ghost Rows) بقوة الجافاسكريبت لضمان عدم ظهور أي تكرار في الواجهة
-    const uniqueTeamsMap = new Map();
-    teamsData.forEach(t => {
-      const cleanTeamId = (t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
-      uniqueTeamsMap.set(cleanTeamId, t);
-    });
+  await loadDashboardData();
 
-    adminProjects = Array.from(uniqueTeamsMap.values()).map(t => {
+  // Supabase Real-time: When a vote is inserted, reload the pre-calculated view
+  supabaseClient
+    .channel('evaluations-channel')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, () => {
+        loadDashboardData();
+    })
+    .subscribe();
+});
+
+async function loadDashboardData() {
+  const { data, error } = await supabaseClient.from('admin_dashboard_view').select('*');
+  
+  if (!error && data) {
+    adminProjects = data.map(t => {
       const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
-      const rawTrack = (t.competition_track || '').replace(/\s+/g, ' ').trim();
-
       return {
-        num: (t.team_number || 'UNKNOWN').trim().toUpperCase(),
-        name: `Team ${(t.team_number || 'UNKNOWN').trim().toUpperCase()}`,
-        category: rawTrack,
-        supervisor: (t.supervisor_name || 'Unknown').trim(),
+        num: t.num,
+        category: t.category,
+        supervisor: t.supervisor,
+        score: Number(t.score),
         membersInline: studentList.join('، ') || 'Unknown',
         membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
       };
     });
-  }
 
-  generateTabs();
-
-  // تحديث 3: سحب إيميل المحكم من قاعدة البيانات لتطبيق الخوارزمية
-  const { data: evalsData, error: evalsError } = await supabaseClient
-    .from('evaluations')
-    .select('project_num, total_score, judge_email');
-    
-  if (!evalsError && evalsData) {
-    rawEvaluations = evalsData;
-    buildInitialCache();
+    generateTabs();
     renderDashboard();
+  } else {
+    console.error("View Fetch Error:", error);
   }
-
-  supabaseClient
-    .channel('evaluations-channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
-        if (payload.new && payload.new.project_num) {
-          const pNum = payload.new.project_num.trim().toUpperCase();
-          const tScore = payload.new.total_score || 0;
-          const prefix = getJudgePrefix(payload.new.judge_email);
-          
-          if (!projectStats[pNum]) projectStats[pNum] = {};
-          if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { totalScore: 0, voteCount: 0 };
-          
-          projectStats[pNum][prefix].totalScore += tScore;
-          projectStats[pNum][prefix].voteCount += 1;
-          
-          renderDashboard();
-        }
-      }
-    )
-    .subscribe();
-});
-
-function buildInitialCache() {
-  projectStats = {};
-  rawEvaluations.forEach(record => {
-    const pNum = (record.project_num || '').trim().toUpperCase();
-    const tScore = record.total_score || 0; 
-    const prefix = getJudgePrefix(record.judge_email);
-    
-    if (!projectStats[pNum]) projectStats[pNum] = {};
-    if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { totalScore: 0, voteCount: 0 };
-    
-    projectStats[pNum][prefix].totalScore += tScore;
-    projectStats[pNum][prefix].voteCount += 1;
-  });
 }
 
 function generateTabs() {
@@ -141,16 +76,7 @@ window.setTab = function(category, element) {
 };
 
 function renderDashboard() {
-  let leaderboardData = adminProjects.map(project => {
-    return { 
-      num: project.num, 
-      category: project.category, 
-      supervisor: project.supervisor,
-      membersInline: project.membersInline,
-      membersList: project.membersList,
-      score: calculateBalancedScore(project.num) 
-    };
-  });
+  let leaderboardData = [...adminProjects];
 
   if (currentCategory !== 'Overall') {
     leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
@@ -221,10 +147,7 @@ window.showTopResultsModal = function() {
   const existingOverlay = document.getElementById('results-overlay');
   if (existingOverlay) existingOverlay.remove();
 
-  const allScores = adminProjects.map(project => {
-    return { ...project, score: calculateBalancedScore(project.num) };
-  });
-
+  const allScores = [...adminProjects];
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
