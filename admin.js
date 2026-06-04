@@ -2,8 +2,10 @@ const SUPABASE_URL = 'https://bpddzqbuqdmvubuzerem.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_76CrGMLLkhNRoTaJy1xEWg_kbp5DSxm';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let rawEvaluations = [];
 let adminProjects = [];
 let currentCategory = 'Overall';
+let projectStats = {}; 
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -16,38 +18,109 @@ window.addEventListener('DOMContentLoaded', async () => {
   const video = document.getElementById('bg-video-stream');
   if (video) video.playbackRate = 0.5;
 
-  await loadDashboardData();
+  const { data: teamsData, error: teamsError } = await supabaseClient.from('teams').select('*');
+  if (!teamsError && teamsData) {
+    
+    // 1. DEDUPLICATE DATABASE GHOST ROWS
+    const uniqueTeams = new Map();
+    teamsData.forEach(t => {
+      const num = (t.team_number || 'UNKNOWN').replace(/\s+/g, '').toUpperCase();
+      const rawTrack = (t.competition_track || '').trim();
+      const isInnovation = t.is_innovation === true || String(t.is_innovation).toLowerCase() === 'true';
 
-  // Supabase Real-time: When a vote is inserted, reload the pre-calculated view
+      if (!uniqueTeams.has(num)) {
+        uniqueTeams.set(num, { ...t, num, rawTrack, isInnovation });
+      } else {
+        if (isInnovation) uniqueTeams.get(num).isInnovation = true;
+      }
+    });
+
+    // 2. BUILD PROJECTS ARRAY (DUAL-TAB RENDERING)
+    adminProjects = [];
+    uniqueTeams.forEach(t => {
+      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
+      const baseObj = {
+        num: t.num,
+        name: `Team ${t.num}`,
+        supervisor: (t.supervisor_name || 'Unknown').trim(),
+        membersInline: studentList.join('، ') || 'Unknown',
+        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown'
+      };
+
+      // Add to Original Technical Track
+      adminProjects.push({ ...baseObj, category: t.rawTrack });
+
+      // Clone to Innovation Track if flagged
+      if (t.isInnovation) {
+        adminProjects.push({ ...baseObj, category: 'Entrepreneurship and Innovation' });
+      }
+    });
+  }
+
+  generateTabs();
+
+  const { data: evalsData, error: evalsError } = await supabaseClient
+    .from('evaluations')
+    .select('project_num, total_score, judge_email');
+    
+  if (!evalsError && evalsData) {
+    rawEvaluations = evalsData;
+    buildInitialCache();
+    renderDashboard();
+  }
+
   supabaseClient
     .channel('evaluations-channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, () => {
-        loadDashboardData();
-    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'evaluations' }, (payload) => {
+        if (payload.new && payload.new.project_num) {
+          const pNum = payload.new.project_num.replace(/\s+/g, '').toUpperCase();
+          const tScore = payload.new.total_score || 0;
+          const email = (payload.new.judge_email || '').toLowerCase();
+          const prefix = email.split('@')[0].replace(/[0-9]/g, ''); 
+          
+          if (!projectStats[pNum]) projectStats[pNum] = {};
+          if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { sum: 0, count: 0 };
+          
+          projectStats[pNum][prefix].sum += tScore;
+          projectStats[pNum][prefix].count += 1;
+          
+          renderDashboard();
+        }
+      }
+    )
     .subscribe();
 });
 
-async function loadDashboardData() {
-  const { data, error } = await supabaseClient.from('admin_dashboard_view').select('*');
-  
-  if (!error && data) {
-    adminProjects = data.map(t => {
-      const studentList = (t.students || '').split(/\r?\n/).filter(s => s.trim() !== '');
-      return {
-        num: t.num,
-        category: t.category,
-        supervisor: t.supervisor,
-        score: Number(t.score),
-        membersInline: studentList.join('، ') || 'Unknown',
-        membersList: studentList.map(s => `• ${s}`).join('<br>') || 'Unknown' 
-      };
-    });
+function buildInitialCache() {
+  projectStats = {};
+  rawEvaluations.forEach(record => {
+    const pNum = (record.project_num || '').replace(/\s+/g, '').toUpperCase();
+    const tScore = record.total_score || 0; 
+    const email = (record.judge_email || '').toLowerCase();
+    const prefix = email.split('@')[0].replace(/[0-9]/g, ''); 
+    
+    if (!projectStats[pNum]) projectStats[pNum] = {};
+    if (!projectStats[pNum][prefix]) projectStats[pNum][prefix] = { sum: 0, count: 0 };
+    
+    projectStats[pNum][prefix].sum += tScore;
+    projectStats[pNum][prefix].count += 1;
+  });
+}
 
-    generateTabs();
-    renderDashboard();
-  } else {
-    console.error("View Fetch Error:", error);
+// 3. BALANCED WEIGHTING ALGORITHM
+function getProjectScore(pNum) {
+  const stats = projectStats[pNum];
+  if (!stats) return 0;
+  
+  let sumOfAvgs = 0;
+  let groupCount = 0;
+  
+  for (const prefix in stats) {
+    sumOfAvgs += (stats[prefix].sum / stats[prefix].count);
+    groupCount++;
   }
+  
+  return groupCount > 0 ? Number((sumOfAvgs / groupCount).toFixed(2)) : 0;
 }
 
 function generateTabs() {
@@ -76,10 +149,24 @@ window.setTab = function(category, element) {
 };
 
 function renderDashboard() {
-  let leaderboardData = [...adminProjects];
+  let leaderboardData = [];
 
-  if (currentCategory !== 'Overall') {
-    leaderboardData = leaderboardData.filter(p => p.category === currentCategory);
+  if (currentCategory === 'Overall') {
+    // PROTECT OVERALL TAB FROM DUPLICATES
+    const seen = new Set();
+    adminProjects.forEach(p => {
+      if (!seen.has(p.num)) {
+        seen.add(p.num);
+        leaderboardData.push({ ...p, score: getProjectScore(p.num) });
+      }
+    });
+  } else {
+    // FILTER BY ACTIVE TAB
+    adminProjects.forEach(p => {
+      if (p.category === currentCategory) {
+        leaderboardData.push({ ...p, score: getProjectScore(p.num) });
+      }
+    });
   }
 
   leaderboardData.sort((a, b) => b.score - a.score);
@@ -147,7 +234,6 @@ window.showTopResultsModal = function() {
   const existingOverlay = document.getElementById('results-overlay');
   if (existingOverlay) existingOverlay.remove();
 
-  const allScores = [...adminProjects];
   const uniqueCategories = [...new Set(adminProjects.map(p => p.category))];
   const allCategories = ['Overall', ...uniqueCategories];
 
@@ -196,7 +282,23 @@ window.showTopResultsModal = function() {
   `;
 
   allCategories.forEach((cat) => {
-    let catProjects = cat === 'Overall' ? [...allScores] : allScores.filter(p => p.category === cat);
+    let catProjects = [];
+    
+    if (cat === 'Overall') {
+      const seen = new Set();
+      adminProjects.forEach(p => {
+        if (!seen.has(p.num)) {
+          seen.add(p.num);
+          catProjects.push({ ...p, score: getProjectScore(p.num) });
+        }
+      });
+    } else {
+      adminProjects.forEach(p => {
+        if (p.category === cat) {
+          catProjects.push({ ...p, score: getProjectScore(p.num) });
+        }
+      });
+    }
     
     catProjects.sort((a, b) => b.score - a.score);
     const top3 = catProjects.slice(0, 3).filter(p => p.score > 0);
